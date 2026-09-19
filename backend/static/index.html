@@ -1,159 +1,260 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laser Metal Nesting App</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #181825; color: #cdd6f4; margin: 0; padding: 15px; }
-        h1 { color: #89b4fa; text-align: center; font-size: 22px; margin-bottom: 20px; }
-        h2 { color: #89b4fa; font-size: 16px; margin-top: 0; border-bottom: 1px solid #313244; padding-bottom: 8px; }
-        .container { display: flex; flex-direction: column; gap: 15px; }
-        .card { background: #1e1e2e; padding: 15px; border-radius: 12px; border: 1px solid #313244; }
-        label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
-        input { padding: 8px; background: #313244; color: #fff; border: 1px solid #45475a; border-radius: 6px; width: 100px; text-align: center; font-size: 14px; }
-        .part-row { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 35px; gap: 6px; margin-bottom: 8px; align-items: center; }
-        .part-row input { width: 100%; }
-        .btn { padding: 10px 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-add { background: #313244; color: #89b4fa; border: 1px dashed #89b4fa; width: 100%; margin-top: 5px; }
-        .btn-calc { background: #89b4fa; color: #11111b; width: 100%; margin-top: 15px; font-size: 16px; }
-        .btn-del { background: #f38ba8; color: #11111b; border: none; border-radius: 6px; height: 35px; font-weight: bold; cursor: pointer; }
-        .btn-download { background: #a6e3a1; color: #11111b; padding: 6px 12px; margin-top: 8px; float: right; }
-        .svg-box { border: 1px solid #45475a; border-radius: 8px; overflow: hidden; background: #11111b; margin-top: 10px; }
-        .badge { background: #a6e3a1; color: #11111b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .badge-warn { background: #f9e2af; color: #11111b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .header-labels { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 35px; gap: 6px; font-size: 11px; color: #a6adc8; margin-bottom: 4px; text-align: center; }
-        .sheet-card { border: 1px solid #45475a; border-radius: 8px; padding: 12px; margin-bottom: 15px; background: #181825; }
-    </style>
+    <title>Metal Nesting App - Раскрой металла</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#11111b',
+                            card: '#181825',
+                            border: '#313244',
+                            text: '#cdd6f4',
+                            accent: '#89b4fa',
+                            green: '#a6e3a1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <h1>Раскрой Металла (Лазер)</h1>
-    <div class="container">
-        <div class="card">
-            <h2>1. Параметры листа и лазера</h2>
-            <label>Ширина листа (мм) <input type="number" id="sheet-w" value="2500"></label>
-            <label>Высота листа (мм) <input type="number" id="sheet-h" value="1250"></label>
-            <label>Зазор реза / Kerf (мм) <input type="number" step="0.1" id="laser-gap" value="0.8"></label>
+<body class="bg-dark-bg text-dark-text min-h-screen p-4 font-sans">
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Заголовок -->
+        <header class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-dark-accent">🧮 Metal Nesting App</h1>
+                <p class="text-sm text-gray-400">Система оптимизации раскроя листового металла</p>
+            </div>
+            <div class="flex gap-2">
+                <label class="cursor-pointer bg-dark-accent text-dark-bg px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
+                    📁 Импорт DXF
+                    <input type="file" id="dxfFile" accept=".dxf" class="hidden" onchange="uploadDxf(this)">
+                </label>
+                <button onclick="exportDxf()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-green-500 transition">
+                    💾 Скачать DXF
+                </button>
+            </div>
+        </header>
 
-            <h2>2. Список деталей</h2>
-            <div class="header-labels">
-                <span>Название</span>
-                <span>Ширина</span>
-                <span>Высота</span>
-                <span>Кол-во</span>
-                <span></span>
-            </div>
-            <div id="parts-list">
-                <div class="part-row">
-                    <input type="text" value="Деталь A" class="part-id">
-                    <input type="number" value="600" class="part-w">
-                    <input type="number" value="400" class="part-h">
-                    <input type="number" value="8" class="part-qty">
-                    <button class="btn-del" onclick="removeRow(this)">×</button>
-                </div>
-                <div class="part-row">
-                    <input type="text" value="Деталь B" class="part-id">
-                    <input type="number" value="300" class="part-w">
-                    <input type="number" value="200" class="part-h">
-                    <input type="number" value="12" class="part-qty">
-                    <button class="btn-del" onclick="removeRow(this)">×</button>
+        <!-- Настройки листа и цен -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
+                <h2 class="text-lg font-semibold text-dark-accent">Параметры листа</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-gray-400">Ширина (мм)</label>
+                        <input type="number" id="sheetW" value="2500" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Высота (мм)</label>
+                        <input type="number" id="sheetH" value="1250" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
+                    </div>
                 </div>
             </div>
-            <button class="btn btn-add" onclick="addPartRow()">+ Добавить деталь</button>
-            <button class="btn btn-calc" onclick="calculate()">Рассчитать раскрой</button>
+
+            <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
+                <h2 class="text-lg font-semibold text-dark-accent">Ценообразование</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-gray-400">Цена за лист (руб)</label>
+                        <input type="number" id="priceSheet" value="5000" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Цена 1м реза (руб)</label>
+                        <input type="number" id="priceMeter" value="50" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="card">
-            <h2>Результаты раскроя</h2>
-            <div id="results-summary">Заполните данные и нажмите "Рассчитать раскрой"</div>
-            <div id="sheets-container"></div>
+        <!-- Список деталей -->
+        <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-dark-accent">Спецификация деталей</h2>
+                <button onclick="addPartRow()" class="bg-dark-border text-white px-3 py-1.5 rounded-lg text-sm hover:bg-opacity-80 transition">+ Добавить деталь</button>
+            </div>
+            
+            <div id="partsList" class="space-y-2">
+                <!-- Строка детали по умолчанию -->
+                <div class="grid grid-cols-12 gap-2 items-center part-row">
+                    <input type="text" placeholder="Имя" value="Деталь 1" class="col-span-4 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-id">
+                    <input type="number" placeholder="Ширина" value="400" class="col-span-3 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-w">
+                    <input type="number" placeholder="Высота" value="300" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-h">
+                    <input type="number" placeholder="Кол-во" value="5" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-qty">
+                    <button onclick="this.parentElement.remove()" class="col-span-1 text-red-400 hover:text-red-300 text-center font-bold">×</button>
+                </div>
+            </div>
+
+            <button onclick="calculateNesting()" class="w-full bg-dark-accent text-dark-bg py-3 rounded-xl font-bold text-center hover:opacity-90 transition shadow-lg">
+                Рассчитать раскрой
+            </button>
         </div>
+
+        <!-- Результаты -->
+        <div id="resultsContainer" class="space-y-6"></div>
+
     </div>
 
     <script>
-        function addPartRow() {
-            const div = document.createElement('div');
-            div.className = 'part-row';
-            div.innerHTML = `
-                <input type="text" value="Деталь" class="part-id">
-                <input type="number" value="200" class="part-w">
-                <input type="number" value="200" class="part-h">
-                <input type="number" value="1" class="part-qty">
-                <button class="btn-del" onclick="removeRow(this)">×</button>
+        function addPartRow(id = 'Деталь', w = 300, h = 200, qty = 1) {
+            const container = document.getElementById('partsList');
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 gap-2 items-center part-row';
+            row.innerHTML = `
+                <input type="text" placeholder="Имя" value="${id}" class="col-span-4 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-id">
+                <input type="number" placeholder="Ширина" value="${w}" class="col-span-3 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-w">
+                <input type="number" placeholder="Высота" value="${h}" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-h">
+                <input type="number" placeholder="Кол-во" value="${qty}" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-qty">
+                <button onclick="this.parentElement.remove()" class="col-span-1 text-red-400 hover:text-red-300 text-center font-bold">×</button>
             `;
-            document.getElementById('parts-list').appendChild(div);
+            container.appendChild(row);
         }
 
-        function removeRow(btn) {
-            const rows = document.querySelectorAll('.part-row');
-            if (rows.length > 1) {
-                btn.parentElement.remove();
+        async function uploadDxf(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            try {
+                const res = await fetch('/api/v1/import/dxf', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success' && data.parts) {
+                    document.getElementById('partsList.innerHTML') = '';
+                    data.parts.forEach(p => {
+                        addPartRow(p.id, p.width, p.height, p.quantity);
+                    });
+                    alert('DXF успешно импортирован!');
+                } else {
+                    alert('Ошибка импорта: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка соединения с сервером');
             }
         }
 
-        function downloadSVG(sheetNum) {
-            const svgElement = document.getElementById(`svg-sheet-${sheetNum}`);
-            if (!svgElement) return;
-            const svgData = svgElement.outerHTML;
-            const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `nesting_sheet_${sheetNum}.svg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        async function calculate() {
-            const sheet = {
-                width: parseFloat(document.getElementById('sheet-w').value),
-                height: parseFloat(document.getElementById('sheet-h').value)
-            };
-            const gap = parseFloat(document.getElementById('laser-gap').value) || 0.8;
-
-            const rows = document.querySelectorAll('.part-row');
+        function collectPayload() {
             const parts = [];
-            rows.forEach(row => {
+            document.querySelectorAll('.part-row').forEach(row => {
                 parts.push({
-                    id: row.querySelector('.part-id').value,
-                    width: parseFloat(row.querySelector('.part-w').value),
-                    height: parseFloat(row.querySelector('.part-h').value),
-                    quantity: parseInt(row.querySelector('.part-qty').value)
+                    id: row.querySelector('.part-id').value || 'Деталь',
+                    width: parseFloat(row.querySelector('.part-w').value) || 0,
+                    height: parseFloat(row.querySelector('.part-h').value) || 0,
+                    quantity: parseInt(row.querySelector('.part-qty').value) || 1
                 });
             });
 
-            const res = await fetch('/api/v1/nest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet, parts, gap })
-            });
+            return {
+                sheet: {
+                    width: parseFloat(document.getElementById('sheetW').value) || 2500,
+                    height: parseFloat(document.getElementById('sheetH').value) || 1250
+                },
+                gap: 0.8,
+                cost_config: {
+                    price_per_sheet: parseFloat(document.getElementById('priceSheet').value) || 0,
+                    price_per_meter_cut: parseFloat(document.getElementById('priceMeter').value) || 0
+                },
+                parts: parts
+            };
+        }
 
-            const data = await res.json();
-            
-            const summaryDiv = document.getElementById('results-summary');
-            summaryDiv.innerHTML = `<p>Потребовалось листов: <strong>${data.total_sheets}</strong> | Зазор реза: <strong>${data.gap} мм</strong></p>`;
-            
-            if (data.unplaced_parts && data.unplaced_parts.length > 0) {
-                summaryDiv.innerHTML += `<p><span class="badge-warn">Не поместились: ${data.unplaced_parts.length} шт. (слишком большие для листа)</span></p>`;
-            }
+        async function calculateNesting() {
+            const payload = collectPayload();
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '<p class="text-center text-gray-400">Идет расчет раскроя...</p>';
 
-            const sheetsContainer = document.getElementById('sheets-container');
-            sheetsContainer.innerHTML = '';
+            try {
+                const res = await fetch('/api/v1/nest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
 
-            data.sheets.forEach(s => {
-                const sheetDiv = document.createElement('div');
-                sheetDiv.className = 'sheet-card';
-                sheetDiv.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3>Лист №${s.sheet_number} <span class="badge">Заполнение: ${s.utilization_percentage}%</span></h3>
-                        <button class="btn btn-download" onclick="downloadSVG(${s.sheet_number})">📥 Скачать SVG</button>
+                if (data.error) {
+                    container.innerHTML = `<div class="bg-red-900/50 border border-red-500 p-4 rounded-xl text-red-200">Ошибка: ${data.error}</div>`;
+                    return;
+                }
+
+                let html = `
+                    <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-2">
+                        <h2 class="text-xl font-bold text-dark-accent">Итоги расчёта</h2>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                            <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
+                                <p class="text-xs text-gray-400">Листов металла</p>
+                                <p class="text-lg font-bold text-white">${data.total_sheets}</p>
+                            </div>
+                            <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
+                                <p class="text-xs text-gray-400">Стоимость металла</p>
+                                <p class="text-lg font-bold text-white">${data.cost.metal} ₽</p>
+                            </div>
+                            <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
+                                <p class="text-xs text-gray-400">Стоимость резки</p>
+                                <p class="text-lg font-bold text-white">${data.cost.cutting} ₽</p>
+                            </div>
+                            <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
+                                <p class="text-xs text-gray-dark-400">Общая стоимость</p>
+                                <p class="text-lg font-bold text-dark-green">${data.cost.total} ₽</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="svg-box">${s.svg}</div>
                 `;
-                sheetsContainer.appendChild(sheetDiv);
-            });
+
+                data.sheets.forEach(sheet => {
+                    html += `
+                        <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-semibold text-white">Лист №${sheet.sheet_number}</h3>
+                                <span class="text-sm px-2.5 py-1 rounded bg-dark-bg border border-dark-border text-dark-green">Заполнение: ${sheet.utilization_percentage}%</span>
+                            </div>
+                            <div class="w-full overflow-x-auto rounded-lg border border-dark-border">
+                                ${sheet.svg}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                container.innerHTML = `<div class="bg-red-900/50 border border-red-500 p-4 rounded-xl text-red-200">Не удалось выполнить запрос к серверу</div>`;
+            }
+        }
+
+        async function exportDxf() {
+            const payload = collectPayload();
+            try {
+                const res = await fetch('/api/v1/export/dxf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    alert('Ошибка при экспорте DXF');
+                    return;
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'nesting_result.dxf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (e) {
+                alert('Не удалось скачать DXF-файл');
+            }
         }
     </script>
 </body>

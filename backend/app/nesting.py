@@ -7,15 +7,26 @@ class MultiSheetPacker:
         self.gap = gap  # Зазор под лазерный рез (в мм)
 
     def pack(self, parts: list) -> dict:
-        # Подготовка списка отдельных элементов
+        # Подготовка списка отдельных элементов (поддерживаем и словари, и объекты)
         flat_parts = []
         for p in parts:
-            for i in range(p.quantity):
+            if isinstance(p, dict):
+                p_id = p.get("id")
+                p_width = p.get("width")
+                p_height = p.get("height")
+                p_qty = p.get("quantity", 1)
+            else:
+                p_id = p.id
+                p_width = p.width
+                p_height = p.height
+                p_qty = p.quantity
+
+            for i in range(p_qty):
                 flat_parts.append({
-                    "id": f"{p.id}_{i+1}",
-                    "part_id": p.id,
-                    "w": p.width,
-                    "h": p.height
+                    "id": f"{p_id}_{i+1}",
+                    "part_id": p_id,
+                    "w": p_width,
+                    "h": p_height
                 })
 
         # Сортировка по убыванию площади
@@ -37,11 +48,15 @@ class MultiSheetPacker:
             utilization = (used_area / total_area) * 100 if total_area > 0 else 0
 
             svg_content = self.generate_svg(placed_parts, sheet_index)
+            
+            # Считаем суммарную длину реза для листа (периметры размещенных деталей)
+            cut_length_m = sum(2 * (p["width"] + p["height"]) for p in placed_parts) / 1000.0
 
             sheets_result.append({
                 "sheet_number": sheet_index,
                 "placed_parts": placed_parts,
                 "utilization_percentage": round(utilization, 2),
+                "cut_length_m": round(cut_length_m, 2),
                 "svg": svg_content
             })
 
@@ -60,7 +75,6 @@ class MultiSheetPacker:
         unplaced_parts = []
 
         for part in parts:
-            # Учитываем зазор между деталями
             pw_gap = part["w"] + self.gap
             ph_gap = part["h"] + self.gap
 
@@ -86,6 +100,7 @@ class MultiSheetPacker:
 
             if best_rect_idx != -1:
                 target_rect = free_rectangles.pop(best_rect_idx)
+
                 actual_w = part["h"] if rotated else part["w"]
                 actual_h = part["w"] if rotated else part["h"]
 
@@ -129,7 +144,6 @@ class MultiSheetPacker:
             f'<svg id="svg-sheet-{sheet_num}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {self.sheet_width} {self.sheet_height}" width="100%" height="100%">',
             f'  <rect width="{self.sheet_width}" height="{self.sheet_height}" fill="#11111b" stroke="#45475a" stroke-width="2"/>'
         ]
-
         for i, p in enumerate(placed_parts):
             color = colors[i % len(colors)]
             svg.append(
@@ -143,6 +157,5 @@ class MultiSheetPacker:
                     f'fill="#ffffff" font-size="{min(font_size, 20)}" font-family="sans-serif" '
                     f'text-anchor="middle" dominant-baseline="central">{p["id"]}</text>'
                 )
-
         svg.append('</svg>')
         return "\n".join(svg)
