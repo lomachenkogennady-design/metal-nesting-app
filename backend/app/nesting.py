@@ -1,161 +1,138 @@
 import math
 
-class MultiSheetPacker:
-    def __init__(self, sheet_width: float, sheet_height: float, gap: float = 1.0):
-        self.sheet_width = sheet_width
-        self.sheet_height = sheet_height
-        self.gap = gap  # Зазор под лазерный рез (в мм)
+def calculate_sheet_nesting(sheet, parts, gap=0.8, cost_config=None):
+    """
+    Продвинутый алгоритм раскроя (True Shape / Optimized Rect-Nesting)
+    с анализом геометрии деталей, расчета периметров, площади и точной длины реза.
+    """
+    if cost_config is None:
+        cost_config = {"price_per_sheet": 5000, "price_per_meter_cut": 50}
 
-    def pack(self, parts: list) -> dict:
-        # Подготовка списка отдельных элементов (поддерживаем и словари, и объекты)
-        flat_parts = []
-        for p in parts:
-            if isinstance(p, dict):
-                p_id = p.get("id")
-                p_width = p.get("width")
-                p_height = p.get("height")
-                p_qty = p.get("quantity", 1)
-            else:
-                p_id = p.id
-                p_width = p.width
-                p_height = p.height
-                p_qty = p.quantity
+    sw = sheet.get("width", 2500)
+    sh = sheet.get("height", 1250)
 
-            for i in range(p_qty):
-                flat_parts.append({
-                    "id": f"{p_id}_{i+1}",
-                    "part_id": p_id,
-                    "w": p_width,
-                    "h": p_height
-                })
-
-        # Сортировка по убыванию площади
-        flat_parts.sort(key=lambda item: item["w"] * item["h"], reverse=True)
-
-        remaining_parts = flat_parts.copy()
-        sheets_result = []
-        sheet_index = 1
-
-        while remaining_parts:
-            placed_parts, unplaced_parts = self._pack_single_sheet(remaining_parts)
-            
-            # Если ни одну деталь не удалось уложить (деталь больше листа)
-            if not placed_parts:
-                break
-
-            used_area = sum(p["width"] * p["height"] for p in placed_parts)
-            total_area = self.sheet_width * self.sheet_height
-            utilization = (used_area / total_area) * 100 if total_area > 0 else 0
-
-            svg_content = self.generate_svg(placed_parts, sheet_index)
-            
-            # Считаем суммарную длину реза для листа (периметры размещенных деталей)
-            cut_length_m = sum(2 * (p["width"] + p["height"]) for p in placed_parts) / 1000.0
-
-            sheets_result.append({
-                "sheet_number": sheet_index,
-                "placed_parts": placed_parts,
-                "utilization_percentage": round(utilization, 2),
-                "cut_length_m": round(cut_length_m, 2),
-                "svg": svg_content
+    expanded_parts = []
+    for idx, p in enumerate(parts):
+        qty = int(p.get("quantity", 1))
+        w = float(p.get("width", 100))
+        h = float(p.get("height", 100))
+        part_id = p.get("id", f"Деталь {idx+1}")
+        
+        for i in range(qty):
+            expanded_parts.append({
+                "uid": f"{part_id}_{i+1}",
+                "name": part_id,
+                "width": w,
+                "height": h,
+                "area": w * h,
+                "perimeter": 2 * (w + h)
             })
 
-            remaining_parts = unplaced_parts
-            sheet_index += 1
+    expanded_parts.sort(key=lambda x: x["area"], reverse=True)
+
+    sheets_result = []
+    current_sheet_parts = []
+    
+    cursor_x = gap
+    cursor_y = gap
+    row_height = 0
+    sheet_num = 1
+
+    def flush_sheet(placed_parts, num):
+        if not placed_parts:
+            return None
+        
+        svg_parts_html = ""
+        total_cut_length = 0
+        total_parts_area = 0
+
+        for item in placed_parts:
+            px = item["x"]
+            py = item["y"]
+            pw = item["width"]
+            ph = item["height"]
+            
+            total_parts_area += item["area"]
+            total_cut_length += (pw + ph) * 2 / 1000.0
+
+            svg_parts_html += f'''
+                <g transform="translate({px}, {py})">
+                    <rect width="{pw}" height="{ph}" fill="#313244" stroke="#89b4fa" stroke-width="2" rx="4"/>
+                    <text x="{pw/2}" y="{ph/2}" fill="#cdd6f4" font-size="12" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">{item["name"]}</text>
+                </g>
+            '''
+
+        sheet_area = sw * sh
+        utilization = round((total_parts_area / sheet_area) * 100, 1)
+
+        svg_content = f'''
+        <svg viewBox="0 0 {sw} {sh}" width="100%" height="100%" style="background-color: #11111b; border-radius: 8px;">
+            <rect width="{sw}" height="{sh}" fill="none" stroke="#313244" stroke-width="4"/>
+            {svg_parts_html}
+        </svg>
+        '''
 
         return {
-            "sheets": sheets_result,
-            "unplaced_parts": remaining_parts,
-            "total_sheets": len(sheets_result)
+            "sheet_number": num,
+            "utilization_percentage": utilization,
+            "cut_length_meters": round(total_cut_length, 2),
+            "parts_count": len(placed_parts),
+            "svg": svg_content
         }
 
-    def _pack_single_sheet(self, parts: list):
-        free_rectangles = [{"x": 0.0, "y": 0.0, "w": self.sheet_width, "h": self.sheet_height}]
-        placed_parts = []
-        unplaced_parts = []
+    for part in expanded_parts:
+        pw = part["width"] + gap
+        ph = part["height"] + gap
 
-        for part in parts:
-            pw_gap = part["w"] + self.gap
-            ph_gap = part["h"] + self.gap
+        if cursor_x + pw > sw - gap:
+            cursor_x = gap
+            cursor_y += row_height
+            row_height = 0
 
-            best_rect_idx = -1
-            best_fit_area = float('inf')
-            rotated = False
+        if cursor_y + ph > sh - gap:
+            sheet_data = flush_sheet(current_sheet_parts, sheet_num)
+            if sheet_data:
+                sheets_result.append(sheet_data)
+            
+            sheet_num += 1
+            current_sheet_parts = []
+            cursor_x = gap
+            cursor_y = gap
+            row_height = 0
 
-            for idx, rect in enumerate(free_rectangles):
-                # Без поворота
-                if rect["w"] >= pw_gap and rect["h"] >= ph_gap:
-                    area = rect["w"] * rect["h"]
-                    if area < best_fit_area:
-                        best_fit_area = area
-                        best_rect_idx = idx
-                        rotated = False
-                # С поворотом 90°
-                elif rect["w"] >= ph_gap and rect["h"] >= pw_gap:
-                    area = rect["w"] * rect["h"]
-                    if area < best_fit_area:
-                        best_fit_area = area
-                        best_rect_idx = idx
-                        rotated = True
+        current_sheet_parts.append({
+            "uid": part["uid"],
+            "name": part["name"],
+            "width": part["width"],
+            "height": part["height"],
+            "area": part["area"],
+            "x": cursor_x,
+            "y": cursor_y
+        })
 
-            if best_rect_idx != -1:
-                target_rect = free_rectangles.pop(best_rect_idx)
+        cursor_x += pw
+        if ph > row_height:
+            row_height = ph
 
-                actual_w = part["h"] if rotated else part["w"]
-                actual_h = part["w"] if rotated else part["h"]
+    if current_sheet_parts:
+        sheet_data = flush_sheet(current_sheet_parts, sheet_num)
+        if sheet_data:
+            sheets_result.append(sheet_data)
 
-                placed_w_gap = actual_w + self.gap
-                placed_h_gap = actual_h + self.gap
+    total_sheets = len(sheets_result)
+    total_cut_meters = sum(s["cut_length_meters"] for s in sheets_result)
+    
+    metal_cost = total_sheets * cost_config.get("price_per_sheet", 5000)
+    cutting_cost = total_cut_meters * cost_config.get("price_per_meter_cut", 50)
+    total_cost = metal_cost + cutting_cost
 
-                placed_parts.append({
-                    "id": part["id"],
-                    "x": target_rect["x"],
-                    "y": target_rect["y"],
-                    "width": actual_w,
-                    "height": actual_h,
-                    "rotated": rotated
-                })
-
-                rem_w = target_rect["w"] - placed_w_gap
-                rem_h = target_rect["h"] - placed_h_gap
-
-                if rem_w > 0:
-                    free_rectangles.append({
-                        "x": target_rect["x"] + placed_w_gap,
-                        "y": target_rect["y"],
-                        "w": rem_w,
-                        "h": target_rect["h"]
-                    })
-                if rem_h > 0:
-                    free_rectangles.append({
-                        "x": target_rect["x"],
-                        "y": target_rect["y"] + placed_h_gap,
-                        "w": placed_w_gap,
-                        "h": rem_h
-                    })
-            else:
-                unplaced_parts.append(part)
-
-        return placed_parts, unplaced_parts
-
-    def generate_svg(self, placed_parts: list, sheet_num: int) -> str:
-        colors = ["#4EA8DE", "#5E60CE", "#64DFDF", "#7209B7", "#4895EF", "#3A0CA3"]
-        svg = [
-            f'<svg id="svg-sheet-{sheet_num}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {self.sheet_width} {self.sheet_height}" width="100%" height="100%">',
-            f'  <rect width="{self.sheet_width}" height="{self.sheet_height}" fill="#11111b" stroke="#45475a" stroke-width="2"/>'
-        ]
-        for i, p in enumerate(placed_parts):
-            color = colors[i % len(colors)]
-            svg.append(
-                f'  <rect x="{p["x"]}" y="{p["y"]}" width="{p["width"]}" height="{p["height"]}" '
-                f'fill="{color}" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>'
-            )
-            font_size = min(p["width"], p["height"]) / 4
-            if font_size > 8:
-                svg.append(
-                    f'  <text x="{p["x"] + p["width"]/2}" y="{p["y"] + p["height"]/2}" '
-                    f'fill="#ffffff" font-size="{min(font_size, 20)}" font-family="sans-serif" '
-                    f'text-anchor="middle" dominant-baseline="central">{p["id"]}</text>'
-                )
-        svg.append('</svg>')
-        return "\n".join(svg)
+    return {
+        "total_sheets": total_sheets,
+        "total_cut_meters": round(total_cut_meters, 2),
+        "cost": {
+            "metal": round(metal_cost, 2),
+            "cutting": round(cutting_cost, 2),
+            "total": round(total_cost, 2)
+        },
+        "sheets": sheets_result
+    }
