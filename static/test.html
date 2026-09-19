@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Nesting App - Диагностика и Тест</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#11111b',
+                            card: '#181825',
+                            border: '#313244',
+                            text: '#cdd6f4',
+                            accent: '#89b4fa',
+                            green: '#a6e3a1',
+                            red: '#f38ba8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-bg text-dark-text min-h-screen p-4 font-sans flex flex-col justify-between">
+    <div class="max-w-xl mx-auto w-full space-y-6">
+        <header class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg text-center space-y-2">
+            <h1 class="text-2xl font-bold text-dark-accent">🛠️ Диагностический стенд</h1>
+            <p class="text-sm text-gray-400">Проверка связи с бэкендом и готовности API</p>
+        </header>
+
+        <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-4">
+            <h2 class="text-lg font-semibold text-dark-accent">Статус сервера</h2>
+            <div class="p-3 rounded-lg bg-dark-bg border border-dark-border text-sm flex items-center justify-between">
+                <span>Состояние API:</span>
+                <span id="statusBadge" class="font-bold text-yellow-400">Проверка...</span>
+            </div>
+            <button onclick="checkApiHealth()" class="w-full bg-dark-accent text-dark-bg py-2.5 rounded-lg font-bold hover:opacity-90 transition">
+                Проверить соединение повторно
+            </button>
+        </div>
+
+        <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-4">
+            <h2 class="text-lg font-semibold text-dark-accent">Тестовый расчет (API /nest)</h2>
+            <button onclick="runTestNesting()" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-500 transition">
+                Запустить тестовый расчет
+            </button>
+            <div id="testResult" class="hidden p-3 rounded-lg bg-dark-bg border border-dark-border text-xs font-mono text-gray-300 overflow-x-auto max-h-40"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkApiHealth() {
+            const badge = document.getElementById('statusBadge');
+            badge.innerText = 'Проверка...';
+            badge.className = 'font-bold text-yellow-400';
+            try {
+                const res = await fetch('/');
+                if (res.ok) {
+                    badge.innerText = '🟢 Онлайн (Доступен)';
+                    badge.className = 'font-bold text-dark-green';
+                } else {
+                    badge.innerText = '🔴 Ошибка ответа';
+                    badge.className = 'font-bold text-dark-red';
+                }
+            } catch (e) {
+                badge.innerText = '❌ Нет связи с сервером';
+                badge.className = 'font-bold text-dark-red';
+            }
+        }
+
+        async function runTestNesting() {
+            const resultBox = document.getElementById('testResult');
+            resultBox.classList.remove('hidden');
+            resultBox.innerText = 'Отправка запроса...';
+            const payload = {
+                sheet: { width: 2500, height: 1250 },
+                gap: 0.8,
+                cost_config: { price_per_sheet: 5000, price_per_meter_cut: 50 },
+                parts: [{ id: "Тест деталь", width: 500, height: 300, quantity: 2 }]
+            };
+            try {
+                const res = await fetch('/api/v1/nest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                resultBox.innerText = JSON.stringify(data, null, 2);
+            } catch (e) {
+                resultBox.innerText = 'Ошибка: ' + e.message;
+            }
+        }
+        checkApiHealth();
+    </script>
+</body>
+</html>
