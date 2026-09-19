@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Metal Nesting App</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #181825; color: #cdd6f4; margin: 0; padding: 15px; }
+        h1 { color: #89b4fa; text-align: center; font-size: 22px; margin-bottom: 20px; }
+        h2 { color: #89b4fa; font-size: 16px; margin-top: 0; border-bottom: 1px solid #313244; padding-bottom: 8px; }
+        .container { display: flex; flex-direction: column; gap: 15px; }
+        .card { background: #1e1e2e; padding: 15px; border-radius: 12px; border: 1px solid #313244; }
+        label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+        input { padding: 8px; background: #313244; color: #fff; border: 1px solid #45475a; border-radius: 6px; width: 100px; text-align: center; font-size: 14px; }
+        .part-row { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 35px; gap: 6px; margin-bottom: 8px; align-items: center; }
+        .part-row input { width: 100%; }
+        .btn { padding: 10px 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-add { background: #313244; color: #89b4fa; border: 1px dashed #89b4fa; width: 100%; margin-top: 5px; }
+        .btn-calc { background: #89b4fa; color: #11111b; width: 100%; margin-top: 15px; font-size: 16px; }
+        .btn-del { background: #f38ba8; color: #11111b; border: none; border-radius: 6px; height: 35px; font-weight: bold; cursor: pointer; }
+        .btn-download { background: #a6e3a1; color: #11111b; padding: 6px 12px; margin-top: 8px; float: right; }
+        .svg-box { border: 1px solid #45475a; border-radius: 8px; overflow: hidden; background: #11111b; margin-top: 10px; }
+        .badge { background: #a6e3a1; color: #11111b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-warn { background: #f9e2af; color: #11111b; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .header-labels { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 35px; gap: 6px; font-size: 11px; color: #a6adc8; margin-bottom: 4px; text-align: center; }
+        .sheet-card { border: 1px solid #45475a; border-radius: 8px; padding: 12px; margin-bottom: 15px; background: #181825; }
+    </style>
+</head>
+<body>
+    <h1>Раскрой Металла (Лазер)</h1>
+    <div class="container">
+        <div class="card">
+            <h2>1. Параметры листа и лазера</h2>
+            <label>Ширина листа (мм) <input type="number" id="sheet-w" value="2500"></label>
+            <label>Высота листа (мм) <input type="number" id="sheet-h" value="1250"></label>
+            <label>Зазор реза / Kerf (мм) <input type="number" step="0.1" id="laser-gap" value="0.8"></label>
+
+            <h2>2. Список деталей</h2>
+            <div class="header-labels">
+                <span>Название</span>
+                <span>Ширина</span>
+                <span>Высота</span>
+                <span>Кол-во</span>
+                <span></span>
+            </div>
+            <div id="parts-list">
+                <div class="part-row">
+                    <input type="text" value="Деталь A" class="part-id">
+                    <input type="number" value="600" class="part-w">
+                    <input type="number" value="400" class="part-h">
+                    <input type="number" value="8" class="part-qty">
+                    <button class="btn-del" onclick="removeRow(this)">×</button>
+                </div>
+                <div class="part-row">
+                    <input type="text" value="Деталь B" class="part-id">
+                    <input type="number" value="300" class="part-w">
+                    <input type="number" value="200" class="part-h">
+                    <input type="number" value="12" class="part-qty">
+                    <button class="btn-del" onclick="removeRow(this)">×</button>
+                </div>
+            </div>
+            <button class="btn btn-add" onclick="addPartRow()">+ Добавить деталь</button>
+            <button class="btn btn-calc" onclick="calculate()">Рассчитать раскрой</button>
+        </div>
+
+        <div class="card">
+            <h2>Результаты раскроя</h2>
+            <div id="results-summary">Заполните данные и нажмите "Рассчитать раскрой"</div>
+            <div id="sheets-container"></div>
+        </div>
+    </div>
+
+    <script>
+        function addPartRow() {
+            const div = document.createElement('div');
+            div.className = 'part-row';
+            div.innerHTML = `
+                <input type="text" value="Деталь" class="part-id">
+                <input type="number" value="200" class="part-w">
+                <input type="number" value="200" class="part-h">
+                <input type="number" value="1" class="part-qty">
+                <button class="btn-del" onclick="removeRow(this)">×</button>
+            `;
+            document.getElementById('parts-list').appendChild(div);
+        }
+
+        function removeRow(btn) {
+            const rows = document.querySelectorAll('.part-row');
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            }
+        }
+
+        function downloadSVG(sheetNum) {
+            const svgElement = document.getElementById(`svg-sheet-${sheetNum}`);
+            if (!svgElement) return;
+            const svgData = svgElement.outerHTML;
+            const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nesting_sheet_${sheetNum}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        async function calculate() {
+            const sheet = {
+                width: parseFloat(document.getElementById('sheet-w').value),
+                height: parseFloat(document.getElementById('sheet-h').value)
+            };
+            const gap = parseFloat(document.getElementById('laser-gap').value) || 0.8;
+
+            const rows = document.querySelectorAll('.part-row');
+            const parts = [];
+            rows.forEach(row => {
+                parts.push({
+                    id: row.querySelector('.part-id').value,
+                    width: parseFloat(row.querySelector('.part-w').value),
+                    height: parseFloat(row.querySelector('.part-h').value),
+                    quantity: parseInt(row.querySelector('.part-qty').value)
+                });
+            });
+
+            const res = await fetch('/api/v1/nest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sheet, parts, gap })
+            });
+
+            const data = await res.json();
+            
+            const summaryDiv = document.getElementById('results-summary');
+            summaryDiv.innerHTML = `<p>Потребовалось листов: <strong>${data.total_sheets}</strong> | Зазор реза: <strong>${data.gap} мм</strong></p>`;
+            
+            if (data.unplaced_parts && data.unplaced_parts.length > 0) {
+                summaryDiv.innerHTML += `<p><span class="badge-warn">Не поместились: ${data.unplaced_parts.length} шт. (слишком большие для листа)</span></p>`;
+            }
+
+            const sheetsContainer = document.getElementById('sheets-container');
+            sheetsContainer.innerHTML = '';
+
+            data.sheets.forEach(s => {
+                const sheetDiv = document.createElement('div');
+                sheetDiv.className = 'sheet-card';
+                sheetDiv.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>Лист №${s.sheet_number} <span class="badge">Заполнение: ${s.utilization_percentage}%</span></h3>
+                        <button class="btn btn-download" onclick="downloadSVG(${s.sheet_number})">📥 Скачать SVG</button>
+                    </div>
+                    <div class="svg-box">${s.svg}</div>
+                `;
+                sheetsContainer.appendChild(sheetDiv);
+            });
+        }
+    </script>
+</body>
+</html>

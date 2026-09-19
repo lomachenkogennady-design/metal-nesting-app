@@ -1,55 +1,44 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-import ezdxf
-import math
-import tempfile
-import os
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import List, Optional
+
+from app.nesting import MultiSheetPacker
 
 app = FastAPI(title="Metal Nesting API")
 
-@app.post("/api/v1/dxf/parse")
-async def parse_dxf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith('.dxf'):
-        raise HTTPException(status_code=400, detail="Только DXF файлы поддерживаются")
+class Sheet(BaseModel):
+    width: float
+    height: float
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
+class Part(BaseModel):
+    id: str
+    width: float
+    height: float
+    quantity: int
 
-    try:
-        doc = ezdxf.readfile(tmp_path)
-        msp = doc.modelspace()
-        
-        total_length = 0.0
-        pierces = 0
-        
-        for entity in msp:
-            if entity.dxftype() == 'LINE':
-                start = entity.dxf.start
-                end = entity.dxf.end
-                total_length += math.dist((start.x, start.y), (end.x, end.y))
-            
-            elif entity.dxftype() == 'CIRCLE':
-                radius = entity.dxf.radius
-                total_length += 2 * math.pi * radius
-                pierces += 1
-                
-            elif entity.dxftype() == 'LWPOLYLINE':
-                points = [p for p in entity.get_points('xy')]
-                for i in range(len(points) - 1):
-                    total_length += math.dist(points[i], points[i+1])
-                if entity.closed:
-                    total_length += math.dist(points[-1], points[0])
-                    pierces += 1
+class NestingRequest(BaseModel):
+    sheet: Sheet
+    parts: List[Part]
+    gap: Optional[float] = 1.0  # Минимальный зазор под лазерный рез в мм
 
-        return {
-            "filename": file.filename,
-            "total_cut_length_mm": round(total_length, 2),
-            "pierces_count": max(1, pierces),
-            "status": "success"
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка парсинга DXF: {str(e)}")
-    finally:
-        os.remove(tmp_path)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def read_root():
+    return FileResponse("static/index.html")
+
+@app.post("/api/v1/nest")
+def calculate_nesting(data: NestingRequest):
+    packer = MultiSheetPacker(data.sheet.width, data.sheet.height, gap=data.gap)
+    result = packer.pack(data.parts)
+    
+    return {
+        "status": "success",
+        "sheet": data.sheet,
+        "gap": data.gap,
+        "total_sheets": result["total_sheets"],
+        "sheets": result["sheets"],
+        "unplaced_parts": result["unplaced_parts"]
+    }

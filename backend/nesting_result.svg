@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000.0 1000.0" width="100%" height="100%">
+  <rect width="1000.0" height="1000.0" fill="#1e1e2e" stroke="#45475a" stroke-width="2"/>
+  <rect x="0.0" y="0.0" width="400.0" height="300.0" fill="#4EA8DE" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="200.0" y="150.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Plate_A_1</text>
+  <rect x="0.0" y="300.0" width="400.0" height="300.0" fill="#5E60CE" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="200.0" y="450.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Plate_A_2</text>
+  <rect x="0.0" y="600.0" width="400.0" height="300.0" fill="#64DFDF" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="200.0" y="750.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Plate_A_3</text>
+  <rect x="400.0" y="0.0" width="500.0" height="200.0" fill="#7209B7" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="650.0" y="100.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Plate_B_1</text>
+  <rect x="400.0" y="200.0" width="500.0" height="200.0" fill="#4895EF" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="650.0" y="300.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Plate_B_2</text>
+  <rect x="400.0" y="400.0" width="200.0" height="200.0" fill="#3A0CA3" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="500.0" y="500.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Square_C_1</text>
+  <rect x="400.0" y="600.0" width="200.0" height="200.0" fill="#4EA8DE" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="500.0" y="700.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Square_C_2</text>
+  <rect x="400.0" y="800.0" width="200.0" height="200.0" fill="#5E60CE" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="500.0" y="900.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Square_C_3</text>
+  <rect x="600.0" y="400.0" width="200.0" height="200.0" fill="#64DFDF" opacity="0.85" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="700.0" y="500.0" fill="#ffffff" font-size="20" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Square_C_4</text>
+</svg>
