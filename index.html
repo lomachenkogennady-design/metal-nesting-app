@@ -241,7 +241,7 @@ function calc(){
   const fin=appMin?minO:ad;
   const vr=parseFloat($('vatR').value)||0;
   const vA=fin*(vr/100);
-  const grand=fin+vA;
+  const grand=fin+vA;window.__fin=fin;window.__vat=vA;window.__grand=grand;
   
   let h=`<h3 style="margin:0 0 8px;font-size:14px">Калькуляция (${pos.length} поз., ${tQ} изд.)</h3>`;
   h+=`<div class="li"><span>Масса:</span><b>${fmt(tW)} кг</b></div>`;
@@ -336,9 +336,9 @@ function buildP(){
   const m=MATS[$('mat').value]||MATS.galv;
   const vr=parseFloat($('vatR').value)||0;
   const r=$('res').innerText;
-  const tot=(r.match(/ИТОГО с НДС[^\d]*([\d\s.,]+)/)||r.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)||[])[1]||'—';
-  const tB=(r.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)||[])[1]||'—';
-  const tV=(r.match(/НДС \d+%:[^\d]*([\d\s.,]+)/)||[])[1]||'';
+  const tot=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';const tB2=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
+  const tB=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
+  const tV=window.__vat?window.__vat.toFixed(2).replace('.',','):'';
   const title=pm==='kp'?'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ':pm==='inv'?'СЧЁТ НА ОПЛАТУ':'ТЕХНИЧЕСКОЕ ЗАДАНИЕ';
   let h=`<h1>${title} № ${esc($('dNum').value)} от ${new Date($('dDate').value).toLocaleDateString('ru-RU')}</h1>
   <div style="font-size:10px;color:#555;margin-bottom:8px">${esc($('cName').value)} · ИНН ${esc($('cINN').value||'—')} · ${esc($('cPhone').value||'')}</div>

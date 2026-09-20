@@ -34,7 +34,10 @@
     var totalW = W + pad * 2;
     var totalH = show * (H + labelH + gap) + pad;
     
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + totalW + ' ' + totalH + '" width="100%" style="max-width:600px">';
+    var svgPx = 500;
+    var aspect = totalH / totalW;
+    var svgH = Math.round(svgPx * aspect);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgPx + '" height="' + svgH + '" viewBox="0 0 ' + totalW + ' ' + totalH + '" style="background:#fff;display:block">';
     svg += '<style>text{font-family:sans-serif;font-size:8px;fill:#333}.det{fill:#3182ce;fill-opacity:.25;stroke:#2b6cb0;stroke-width:.5}</style>';
     
     var oy = pad;
