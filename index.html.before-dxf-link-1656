@@ -439,9 +439,9 @@ function rst(){if(!confirm('Сбросить всё?'))return;localStorage.remov
 
 function loadURL(){try{if(!location.hash||location.hash.length<5)return false;const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));if(s.d)$('dNum').value=s.d;if(s.c)$('kName').value=s.c;if(Array.isArray(s.p)&&s.p.length)pos=s.p;if(s.vat!==undefined)$('vatR').value=String(s.vat);return true}catch(e){return false}}
 
-window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&__dxf.length){window.__dxfLoaded=true;__dxf.forEach(function(p){pos.push({id:Date.now()+Math.random(),n:p.name||"Из DXF",q:p.count||1,a:p.area||0.5,t:1.5,c:p.cut||5,p:5,b:2,w:p.w||500,h:p.h||400})});window.fpClearParts&&window.fpClearParts();}
+window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&__dxf.length){__dxf.forEach(function(p){pos.push({id:Date.now()+Math.random(),n:p.name||"Из DXF",q:p.count||1,a:p.area||0.5,t:1.5,c:p.cut||5,p:5,b:2})});window.fpClearParts&&window.fpClearParts();}
   const d=new Date();$('dDate').value=today();d.setDate(d.getDate()+14);$('dValid').value=d.toISOString().slice(0,10);$('matDate').value=today();
-  if(!pos||!pos.length){pos=[mkP('Деталь 1',1,0.5,1.5,5,5,2)]}
+  pos=[mkP('Деталь 1',1,0.5,1.5,5,5,2)];
   if(!loadURL())loadS();
   rP();calc();
   document.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',sav);e.addEventListener('change',sav)});
