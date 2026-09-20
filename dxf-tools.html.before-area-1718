@@ -156,7 +156,7 @@ if(p[0]<mnX)mnX=p[0];if(p[1]<mnY)mnY=p[1];
 if(p[0]>mxX)mxX=p[0];if(p[1]>mxY)mxY=p[1];
 });
 if(!isFinite(mnX)){mnX=mnY=mxX=mxY=0}
-var bw=mxX-mnX,bh=mxY-mnY;var bboxArea=bw*bh;var realArea=area;var finalArea=realArea>bboxArea*0.20?realArea:bboxArea*0.85;return{cutM:cut/1000,areaM2:finalArea/1e6,bbox:{minX:mnX,minY:mnY,maxX:mxX,maxY:mxY,w:bw,h:bh}};
+return{cutM:cut/1000,areaM2:area/1e6,bbox:{minX:mnX,minY:mnY,maxX:mxX,maxY:mxY,w:mxX-mnX,h:mxY-mnY}};
 }
 function drawPreview(ents,bbox){
 var c=$('preview');c.width=800;c.height=400;
@@ -240,14 +240,14 @@ function handleMulti(ev){
           failed++;
         } else {
           var baseName = file.name.replace(/\.dxf$/i, '');
-          var pW = Math.round(m.bbox.w); var pH = Math.round(m.bbox.h); parts.push({
+          parts.push({
             id: Date.now() + Math.random(),
             name: baseName || ('Деталь ' + (parts.length + 1)),
-            w: pW,
-            h: pH,
+            w: Math.round(m.bbox.w),
+            h: Math.round(m.bbox.h),
             count: 1,
             cut: +m.cutM.toFixed(2),
-            area: +(pW * pH / 1e6).toFixed(4)
+            area: +m.areaM2.toFixed(4)
           });
           loaded++;
         }
@@ -268,7 +268,7 @@ if(!lastDXF)return;
 var nm=prompt('Наименование:',lastDXF.name||'Деталь');
 if(nm===null)return;
 var cnt=parseInt(prompt('Количество:','1'))||1;
-var pW=Math.round(lastDXF.m.bbox.w);var pH=Math.round(lastDXF.m.bbox.h);parts.push({id:Date.now()+Math.random(),name:nm,w:pW,h:pH,count:cnt,cut:+lastDXF.m.cutM.toFixed(2),area:+(pW*pH/1e6).toFixed(4)});
+parts.push({id:Date.now()+Math.random(),name:nm,w:Math.round(lastDXF.m.bbox.w),h:Math.round(lastDXF.m.bbox.h),count:cnt,cut:+lastDXF.m.cutM.toFixed(2),area:+lastDXF.m.areaM2.toFixed(4)});
 renderParts();
 $('addBtn').disabled=true;
 lastDXF=null;
