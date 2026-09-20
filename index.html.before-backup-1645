@@ -158,7 +158,7 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 <button onclick="saveH()" class="gh">⭐ В историю</button>
 <button onclick="showH()" class="gh">📚 История</button>
 <a href="dxf-tools.html" style="display:inline-block;padding:9px 14px;background:transparent;color:#3182ce;border:1.5px solid #3182ce;border-radius:6px;text-decoration:none;font-weight:600;margin:3px 2px">📐 DXF</a> <button onclick="cpLink()" class="gh">🔗 Ссылка</button>
-<button onclick="mailTo()" class="gh">✉️ Email</button><button onclick="tgShare()" class="gh">📱 Telegram</button><button onclick="saveJSON()" class="gh">📥 Бэкап</button><button onclick="loadJSON()" class="gh">📂 Восстановить</button>
+<button onclick="mailTo()" class="gh">✉️ Email</button><button onclick="tgShare()" class="gh">📱 Telegram</button>
 <button onclick="rst()" class="sec">↺ Сброс</button>
 
 <div class="po" id="po"></div>
@@ -327,56 +327,6 @@ function cpLink(){
   else prompt('Скопируйте:',url);
 }
 
-function saveJSON(){
-  var data={
-    ver:'v2',
-    saved:new Date().toISOString(),
-    docNum:$('dNum')?$('dNum').value:'',
-    positions:pos
-  };
-  var fields=['cName','cINN','cOGRN','cAddr','cPhone','cEmail','cBank','cRS','cKS','cBIK','dNum','dDate','dValid','dTerm','kName','kINN','kAddr','mName','mPhone','prepay','payTerms','mat','cPrice','matDate','dens','cutType','cutP','piF','b1','b2','b3','b4','pArea','pPrice','pType','drC','drP','znC','znP','wC','wP','tapC','tapP','del','oth','urg','disc','minO','vatR'];
-  data.fields={};
-  fields.forEach(function(f){if($(f))data.fields[f]=$(f).value});
-  if($('ownPrice'))data.fields.ownPrice=$('ownPrice').checked;
-  if($('volDisc'))data.fields.volDisc=$('volDisc').checked;
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='KP_'+(data.docNum||'backup')+'_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-function loadJSON(){
-  var el=$('fileJSONRestore');
-  if(el)el.click();
-}
-function doLoadJSON(ev){
-  var f=ev.target.files[0];
-  if(!f)return;
-  var r=new FileReader();
-  r.onload=function(e){
-    try{
-      var data=JSON.parse(e.target.result);
-      if(data.fields){
-        Object.keys(data.fields).forEach(function(k){
-          var el=$(k);
-          if(!el)return;
-          if(typeof data.fields[k]==='boolean')el.checked=data.fields[k];
-          else el.value=data.fields[k];
-        });
-      }
-      if(Array.isArray(data.positions)&&data.positions.length){
-        pos=data.positions;
-        if(typeof rP==='function')rP();
-      }
-      if(typeof calc==='function')calc();
-      alert('OK: загружено '+(data.positions?data.positions.length:0)+' поз.');
-    }catch(err){
-      alert('Ошибка загрузки: '+err.message);
-    }
-  };
-  r.readAsText(f);
-}
 function tgShare(){
   var num=$('dNum').value||'—';
   var total=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';
@@ -448,5 +398,5 @@ window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&
 };
 window.addEventListener('beforeunload',sav);
 </script>
-<input type="file" id="fileJSONRestore" accept=".json" style="display:none" onchange="doLoadJSON(event)"></body>
+</body>
 </html>
