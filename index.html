@@ -52,6 +52,11 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 .tab.active{color:#3182ce;border-bottom-color:#3182ce}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
+
+@media print{
+  .print-only img,.print-only canvas{max-width:100%!important;height:auto!important}
+  .print-only div[style*="position:relative"]{page-break-inside:avoid}
+}
 </style>
 </head>
 <body>
