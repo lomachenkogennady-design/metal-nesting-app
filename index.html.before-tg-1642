@@ -158,7 +158,7 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 <button onclick="saveH()" class="gh">⭐ В историю</button>
 <button onclick="showH()" class="gh">📚 История</button>
 <a href="dxf-tools.html" style="display:inline-block;padding:9px 14px;background:transparent;color:#3182ce;border:1.5px solid #3182ce;border-radius:6px;text-decoration:none;font-weight:600;margin:3px 2px">📐 DXF</a> <button onclick="cpLink()" class="gh">🔗 Ссылка</button>
-<button onclick="mailTo()" class="gh">✉️ Email</button><button onclick="tgShare()" class="gh">📱 Telegram</button>
+<button onclick="mailTo()" class="gh">✉️ Email</button>
 <button onclick="rst()" class="sec">↺ Сброс</button>
 
 <div class="po" id="po"></div>
@@ -327,14 +327,6 @@ function cpLink(){
   else prompt('Скопируйте:',url);
 }
 
-function tgShare(){
-  var num=$('dNum').value||'—';
-  var total=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';
-  var text='КП № '+num+'\nСумма: '+total+' ₽ с НДС\nФАЙЕРПРОМ — металлообработка';
-  var url=location.href;
-  var tgUrl='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);
-  window.open(tgUrl,'_blank');
-}
 function mailTo(){
   var to='',subj='КП '+$('dNum').value+' от '+$('dDate').value,body='Здравствуйте!\n\nНаправляю КП.\nС уважением';
   location.href='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
