@@ -8,3 +8,13 @@ client/build/
 .idea/
 .vscode/
 index.html.backup-*
+
+# Python
+__pycache__/
+*.pyc
+venv/
+backend/venv/
+*.log
+uvicorn.log
+backend/0
+backend/1
