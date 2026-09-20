@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор раскроя и стоимости металла — ФАЙЕРПРОМ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #f4f6f9; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { font-size: 24px; margin-bottom: 20px; color: #1a202c; text-align: center; }
+        .section { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .section h2 { font-size: 16px; margin-bottom: 12px; color: #4a5568; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 5px; color: #4a5568; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; background: #fff; }
+        .row { display: flex; gap: 15px; }
+        .row .form-group { flex: 1; }
+        button { background: #3182ce; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: 600; border-radius: 6px; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #2b6cb0; }
+        .results { margin-top: 25px; background: #ebf8ff; border: 1px solid #bee3f8; padding: 20px; border-radius: 8px; }
+        .results h3 { font-size: 18px; margin-bottom: 10px; color: #2b6cb0; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .result-item span:last-child { font-weight: 600; color: #2d3748; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Калькулятор раскроя и стоимости металла</h1>
+
+    <div class="section">
+        <h2>1. Выбор материала и параметров</h2>
+        <div class="form-group">
+            <label for="material">Марка металла:</label>
+            <select id="material">
+                <option value="galvanized">Оцинкованная сталь (ОЦ)</option>
+                <option value="coldRolled">Холоднокатаная сталь (ХК)</option>
+                <option value="stainless">Нержавеющая сталь (AISI 304)</option>
+                <option value="hotRolled">Горячекатаная сталь (ГК)</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label for="thickness">Толщина (мм, от 0.5 до 5.0):</label>
+                <input type="number" id="thickness" min="0.5" max="5.0" step="0.1" value="1.5">
+            </div>
+            <div class="form-group">
+                <label>Стандартный лист (мм):</label>
+                <input type="text" value="2500 × 1250" disabled style="background: #edf2f7; color: #718096;">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Данные раскроя деталей</h2>
+        <div class="row">
+            <div class="form-group">
+                <label for="usedArea">Полезная площадь деталей (м²):</label>
+                <input type="number" id="usedArea" min="0.01" step="0.01" value="1.5">
+            </div>
+            <div class="form-group">
+                <label for="remnantArea">Ликвидный остаток / отход (м²):</label>
+                <input type="number" id="remnantArea" min="0" step="0.01" value="0.5">
+            </div>
+        </div>
+    </div>
+
+    <button onclick="calculate()">Рассчитать стоимость</button>
+
+    <div class="results" id="resultsBlock">
+        <h3>Результаты расчёта:</h3>
+        <div class="result-item"><span>Масса чистых деталей:</span> <span id="resWeight">0 кг</span></div>
+        <div class="result-item"><span>Стоимость чистого металла:</span> <span id="resNetCost">0 руб.</span></div>
+        <div class="result-item"><span>Масса ликвидного остатка:</span> <span id="resRemnantWeight">0 кг</span></div>
+        <div class="result-item"><span>Стоимость остатка:</span> <span id="resRemnantCost">0 руб.</span></div>
+        <hr style="margin: 10px 0; border: none; border-top: 1px solid #bee3f8;">
+        <div class="result-item" style="font-size: 17px; color: #2c5282;"><span>Итого к оплате (без НДС):</span> <span id="resTotal">0 руб.</span></div>
+    </div>
+</div>
+
+<script>
+    const materialsData = {
+        galvanized: { density: 7850, pricePerKg: 74.83 },  //
+        coldRolled: { density: 7850, pricePerKg: 61.27 },  //
+        stainless:  { density: 7900, pricePerKg: 311.47 }, //
+        hotRolled:  { density: 7850, pricePerKg: 65.00 }
+    };
+
+    function calculate() {
+        const matKey = document.getElementById('material').value;
+        const thickness = parseFloat(document.getElementById('thickness').value);
+        const usedArea = parseFloat(document.getElementById('usedArea').value) || 0;
+        const remnantArea = parseFloat(document.getElementById('remnantArea').value) || 0;
+        const mat = materialsData[matKey];
+
+        const volumeM3 = usedArea * (thickness / 1000);
+        const weightKg = volumeM3 * mat.density;
+        const netCost = weightKg * mat.pricePerKg;
+
+        const remnantVolumeM3 = remnantArea * (thickness / 1000);
+        const remnantWeightKg = remnantVolumeM3 * mat.density;
+        const remnantCost = remnantWeightKg * mat.pricePerKg;
+
+        const totalCost = netCost + remnantCost;
+
+        document.getElementById('resWeight').innerText = weightKg.toFixed(2) + ' кг';
+        document.getElementById('resNetCost').innerText = netCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+        document.getElementById('resRemnantWeight').innerText = remnantWeightKg.toFixed(2) + ' кг';
+        document.getElementById('resRemnantCost').innerText = remnantCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+        document.getElementById('resTotal').innerText = totalCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+    }
+
+    window.onload = calculate;
+</script>
+</body>
+</html>
