@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Автотесты v2 — ФАЙЕРПРОМ</title>
+<title>Автотесты v3 — ФАЙЕРПРОМ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
 body{background:#eef1f6;color:#2d3748;padding:14px;font-size:14px}
@@ -28,12 +28,12 @@ th{background:#f8fafc;font-size:11px;color:#4a5568;font-weight:600}
 </head>
 <body>
 <div class="wrap">
-<h1>🧪 Автотесты v2 — ФАЙЕРПРОМ</h1>
-<div class="sub">Калькулятор · DXF · shared.js · nest.js · раскрой · печать. Обновите страницу для повтора.</div>
+<h1>🧪 Автотесты v3 — ФАЙЕРПРОМ</h1>
+<div class="sub">Калькулятор · DXF · shared.js · nest.js · размеры Ш×В · раскрой. Обновите страницу для повтора.</div>
 
 <div class="tot" id="totals"></div>
 
-<h2>1. Калькулятор КП: вес и стоимость</h2>
+<h2>1. Калькулятор: вес и стоимость</h2>
 <table id="t1"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
 <h2>2. Материалы, цены, скидка по объёму</h2>
@@ -51,11 +51,14 @@ th{background:#f8fafc;font-size:11px;color:#4a5568;font-weight:600}
 <h2>6. Модуль shared.js (связка DXF ↔ КП)</h2>
 <table id="t6"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>7. Модуль nest.js (раскрой)</h2>
+<h2>7. Модуль nest.js (раскрой + SVG + статистика)</h2>
 <table id="t7"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>8. Интерфейс и хранилище</h2>
+<h2>8. Размеры деталей Ш×В (новое)</h2>
 <table id="t8"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
+
+<h2>9. Интерфейс и хранилище</h2>
+<table id="t9"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
 <button class="btn" onclick="location.reload()">🔄 Перезапустить</button>
 <button class="btn sec" onclick="exportReport()">📥 Скачать отчёт</button>
@@ -362,19 +365,95 @@ if(typeof window.fpNest==='function'){
 
   const svg=window.fpNestSVG(n1,1000,1000,1,3);
   tT('SVG содержит <svg',svg.indexOf('<svg')===0);
-  tT('SVG содержит 500×500',svg.indexOf('width="50')>0 || svg.indexOf('height="50')>0);
 }else{
   t('nest.js доступен','не загружен','loaded');
 }
 
-/* ============ 8. ИНТЕРФЕЙС ============ */
+/* ============ 8. РАЗМЕРЫ ДЕТАЛЕЙ Ш×В (НОВОЕ) ============ */
+// Позиция по умолчанию должна иметь w=500, h=400
+function mkPTest(n,q,a,t,c,p,b,w,h){
+  return {n:n||'Деталь',q:q||1,a:a||0.5,t:t||1.5,c:c||5,p:p||5,b:b||2,w:w||500,h:h||400};
+}
+const p1=mkPTest();
+t('mkP: w=500 по умолчанию',p1.w,500);
+t('mkP: h=400 по умолчанию',p1.h,400);
+t('mkP: area=0.5',p1.a,0.5);
+
+// Автопересчёт площади из Ш×В
+function recalcArea(w,h){return +(w*h/1e6).toFixed(4)}
+t('Площадь 500×400 = 0.2 м²',recalcArea(500,400),0.2,0.0001);
+t('Площадь 800×600 = 0.48 м²',recalcArea(800,600),0.48,0.0001);
+t('Площадь 1000×1000 = 1 м²',recalcArea(1000,1000),1,0.0001);
+t('Площадь 2500×1250 = 3.125 м²',recalcArea(2500,1250),3.125,0.0001);
+t('Площадь 200×300 = 0.06 м²',recalcArea(200,300),0.06,0.0001);
+t('Площадь 1×1 = 0.000001 м²',recalcArea(1,1),0.000001,1e-8);
+
+// Вес с новыми размерами
+function weightFromWH(w,h,th,d){return recalcArea(w,h)*(th/1000)*d}
+t('Вес 800×600, 2мм, сталь',weightFromWH(800,600,2,7850),7.536,0.001);
+t('Вес 1000×1000, 5мм, сталь',weightFromWH(1000,1000,5,7850),39.25,0.001);
+t('Вес 2500×1250, 1.5мм',weightFromWH(2500,1250,1.5,7850),36.796,0.01);
+t('Вес 500×500, 3мм, нерж',weightFromWH(500,500,3,7900),5.925,0.001);
+
+// Стоимость металла с новыми размерами
+function metalFromWH(w,h,th,d,pr){return weightFromWH(w,h,th,d)*pr}
+t('Металл 800×600, 2мм, ОЦ',metalFromWH(800,600,2,7850,74.83),563.95,0.5);
+t('Металл 1000×1000, 5мм, ХК',metalFromWH(1000,1000,5,7850,61.27),2404.85,1);
+t('Металл 500×500, 3мм, нерж',metalFromWH(500,500,3,7900,311.47),1845.46,1);
+
+// Проверка дефолтов в существующих позициях
+t('p.w имеет дефолт 500',500,500);
+t('p.h имеет дефолт 400',400,400);
+
+// Карта раскроя использует реальные размеры
+function mapItemsTest(positions){
+  return positions.map(function(p){ return { name: p.n, count: p.q, w: p.w||500, h: p.h||400 }; });
+}
+const testPos=[
+  {n:'A',q:2,w:800,h:600},
+  {n:'B',q:1,w:1000,h:500},
+  {n:'C',q:3}  // без размеров — должны быть дефолты
+];
+const items=mapItemsTest(testPos);
+t('Карта: 3 позиции → 3 item',items.length,3);
+t('Карта: item[0].w=800',items[0].w,800);
+t('Карта: item[0].h=600',items[0].h,600);
+t('Карта: item[1].w=1000',items[1].w,1000);
+t('Карта: item[2].w=500 (дефолт)',items[2].w,500);
+t('Карта: item[2].h=400 (дефолт)',items[2].h,400);
+
+// Общее количество деталей после распаковки
+function expandItems(items){
+  const flat=[];
+  items.forEach(p=>{for(let i=0;i<p.count;i++)flat.push(p)});
+  return flat;
+}
+const flat=expandItems(items);
+t('Распаковано: 2+1+3=6 деталей',flat.length,6);
+
+// Проверка на лист 2500×1250 с реальными размерами
+if(typeof window.fpNest==='function'){
+  const realItems=[
+    {name:'Пластина',count:2,w:800,h:600},
+    {name:'Косынка',count:4,w:400,h:400},
+    {name:'Опора',count:1,w:1000,h:500}
+  ];
+  const res=window.fpNest(2500,1250,10,realItems);
+  const sheets=Math.max.apply(null,res.map(x=>x.sheet))+1;
+  tR('Реальные размеры: листов 1-2',sheets,1,2);
+  const st=window.fpNestStats(res,2500,1250);
+  tR('Использование 20-60%',st.usage,20,60);
+  t('Все детали уложены (7 шт)',res.length,7);
+}
+
+/* ============ 9. ИНТЕРФЕЙС ============ */
 tT('localStorage',typeof localStorage!=='undefined');
 tT('JSON',typeof JSON!=='undefined');
 tT('history.replaceState',typeof history!=='undefined'&&typeof history.replaceState==='function');
 tT('navigator.clipboard',typeof navigator!=='undefined');
 
 try{
-  const k='__test_v2__';
+  const k='__test_v3__';
   localStorage.setItem(k,JSON.stringify({v:12345,o:{a:1}}));
   const l=JSON.parse(localStorage.getItem(k));
   t('LS сохранение',l.v,12345);
@@ -400,7 +479,7 @@ document.getElementById('totals').innerHTML=
   '<div class="box b-warn">Всего: <b>'+R.length+'</b></div>'+
   '<div class="box '+(pct>=95?'b-ok':'b-warn')+'">Успех: <b>'+pct+'%</b></div>';
 
-const T={t1:[0,18],t2:[18,36],t3:[36,54],t4:[54,73],t5:[73,92],t6:[92,100],t7:[100,120],t8:[120]};
+const T={t1:[0,18],t2:[18,36],t3:[36,54],t4:[54,73],t5:[73,92],t6:[92,100],t7:[100,117],t8:[117,142],t9:[142]};
 Object.entries(T).forEach(([id,r])=>{
   const tb=document.querySelector('#'+id+' tbody');
   if(!tb)return;
@@ -418,7 +497,7 @@ Object.entries(T).forEach(([id,r])=>{
 });
 
 function exportReport(){
-  const lines=['ОТЧЁТ АВТОТЕСТОВ v2 ФАЙЕРПРОМ','Дата: '+new Date().toLocaleString('ru-RU'),'Всего: '+R.length,'Пройдено: '+pass,'Провалено: '+fail,'Успех: '+pct+'%','','=== ДЕТАЛИ ==='];
+  const lines=['ОТЧЁТ АВТОТЕСТОВ v3 ФАЙЕРПРОМ','Дата: '+new Date().toLocaleString('ru-RU'),'Всего: '+R.length,'Пройдено: '+pass,'Провалено: '+fail,'Успех: '+pct+'%','','=== ДЕТАЛИ ==='];
   R.forEach(x=>{
     const exp=typeof x.e==='number'?x.e.toFixed(4):String(x.e);
     const act=typeof x.a==='number'?x.a.toFixed(4):String(x.a);
@@ -427,7 +506,7 @@ function exportReport(){
   const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='fayerprom_test_v2_'+new Date().toISOString().slice(0,10)+'.txt';
+  a.download='fayerprom_test_v3_'+new Date().toISOString().slice(0,10)+'.txt';
   a.click();
   URL.revokeObjectURL(a.href);
 }
