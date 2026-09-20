@@ -412,7 +412,39 @@ function prt(m){
   buildP();
   setTimeout(function(){window.print()}, 150);
 }
-  
+  // Сохранить родителя и позицию
+  var parent=po.parentNode;
+  var ph=document.createElement('div');
+  parent.insertBefore(ph,po);
+  document.body.appendChild(po);
+  // Скрыть всё на body, кроме po
+  var hidden=[];
+  Array.prototype.slice.call(document.body.children).forEach(function(el){
+    if(el===po)return;
+    if(['SCRIPT','STYLE','META','LINK'].indexOf(el.tagName)!==-1)return;
+    hidden.push([el,el.style.display]);
+    el.style.display='none';
+  });
+  // Показать po
+  po.style.display='block';
+  // Стиль для body
+  var oldBodyMargin=document.body.style.margin;
+  document.body.style.margin='0';
+  document.body.style.padding='0';
+  document.body.style.background='#fff';
+
+  var restore=function(){
+    hidden.forEach(function(h){h[0].style.display=h[1]});
+    if(ph.parentNode)ph.parentNode.insertBefore(po,ph);
+    if(ph.parentNode)ph.remove();
+    document.body.style.margin=oldBodyMargin;
+    document.body.style.padding='';
+    document.body.style.background='';
+    window.removeEventListener('afterprint',restore);
+  };
+  window.addEventListener('afterprint',restore);
+  setTimeout(function(){window.print()},150);
+}
 function buildP(){
   const m=MATS[$('mat').value]||MATS.galv;
   const vr=parseFloat($('vatR').value)||0;
