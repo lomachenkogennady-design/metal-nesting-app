@@ -298,7 +298,78 @@ function xls(){
     h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.q+'</td><td>'+p.a+'</td><td>'+p.t+'</td><td>'+p.c+'</td><td>'+p.p+'</td><td>'+p.b+'</td><td>'+s+'</td></tr>';
   });
   h+='</table>';
-  var blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});
+  var blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'+h+'
+<script>
+/* === ВКЛАДКИ (безопасно, без изменения HTML) === */
+(function(){
+  function initTabs(){
+    if(document.querySelector('.fp-tabs')) return;
+    var wrap = document.querySelector('.wrap') || document.querySelector('.container');
+    if(!wrap) return;
+    var kids = Array.prototype.slice.call(wrap.children);
+    var req = [], calc = [], current = null;
+    var stopIds = ['res','po','__debug'];
+    var stopClasses = ['btn-group','share-box','tabs'];
+    
+    kids.forEach(function(el){
+      var isStop = false;
+      if(el.id && stopIds.indexOf(el.id) !== -1) isStop = true;
+      if(el.classList && stopClasses.some(function(cl){ return el.classList.contains(cl); })) isStop = true;
+      if(isStop){ current = null; return; }
+      if(el.tagName === 'H2'){
+        var t = (el.textContent || '').trim();
+        if(/^0\.|^1\./.test(t)) current = 'req';
+        else if(/^[2-7]\./.test(t)) current = 'calc';
+        else current = null;
+      }
+      if(current === 'req') req.push(el);
+      else if(current === 'calc') calc.push(el);
+    });
+    
+    if(req.length === 0 && calc.length === 0) return;
+    
+    // Скрыть req через класс
+    req.forEach(function(el){ el.classList.add('fp-tab-hidden'); });
+    
+    // Стиль для печати (при печати всё видно)
+    var style = document.createElement('style');
+    style.textContent = '.fp-tab-hidden{display:none!important}@media print{.fp-tab-hidden{display:block!important}.fp-tabs{display:none!important}}';
+    document.head.appendChild(style);
+    
+    // Кнопки вкладок
+    var h1 = wrap.querySelector('h1');
+    if(!h1) return;
+    var tabs = document.createElement('div');
+    tabs.className = 'fp-tabs no-print';
+    tabs.style.cssText = 'display:flex;gap:6px;margin:12px 0 18px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap';
+    tabs.innerHTML = '<button type="button" data-tab="calc" class="fp-tab" style="padding:9px 18px;background:transparent;border:none;border-bottom:3px solid #3182ce;font-size:14px;font-weight:600;color:#3182ce;cursor:pointer;margin-bottom:-2px">📋 Расчёт</button>' +
+      '<button type="button" data-tab="req" class="fp-tab" style="padding:9px 18px;background:transparent;border:none;border-bottom:3px solid transparent;font-size:14px;font-weight:600;color:#718096;cursor:pointer;margin-bottom:-2px">📄 Реквизиты</button>';
+    h1.parentNode.insertBefore(tabs, h1.nextSibling);
+    
+    tabs.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('button') : null;
+      if(!btn || !btn.classList.contains('fp-tab')) return;
+      var tab = btn.getAttribute('data-tab');
+      tabs.querySelectorAll('.fp-tab').forEach(function(b){
+        b.style.borderBottomColor = 'transparent';
+        b.style.color = '#718096';
+      });
+      btn.style.borderBottomColor = '#3182ce';
+      btn.style.color = '#3182ce';
+      if(tab === 'req'){
+        req.forEach(function(el){ el.classList.remove('fp-tab-hidden'); });
+        calc.forEach(function(el){ el.classList.add('fp-tab-hidden'); });
+      } else {
+        req.forEach(function(el){ el.classList.add('fp-tab-hidden'); });
+        calc.forEach(function(el){ el.classList.remove('fp-tab-hidden'); });
+      }
+    });
+  }
+  window.addEventListener('DOMContentLoaded', initTabs);
+  setTimeout(initTabs, 300);
+})();
+</script>
+</body></html>'],{type:'application/vnd.ms-excel'});
   dl(blob,'KP_'+$('dNum').value+'.xls');
 }
 
