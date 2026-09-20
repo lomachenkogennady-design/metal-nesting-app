@@ -96,7 +96,7 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 
 <h2>3. Позиции</h2>
 <table id="posT"><thead><tr>
-<th>Наимен.</th><th>Кол-во</th><th>Пл.м²</th><th>Толщ.</th><th>Рез м</th><th>Врез.</th><th>Гиб.</th><th>Сумма ₽</th><th></th>
+<th>Наимен.</th><th>Кол-во</th><th>Ш мм</th><th>В мм</th><th>Пл.м²</th><th>Толщ.</th><th>Рез м</th><th>Врез.</th><th>Гиб.</th><th>Сумма ₽</th><th></th>
 </tr></thead><tbody id="posB"></tbody></table>
 <button onclick="addPos()">+ Позиция</button>
 
@@ -163,7 +163,7 @@ const today=()=>new Date().toISOString().slice(0,10);
 const v=(id,min=0,max=null,def=0)=>{let x=parseFloat(($(id)?.value||'').replace(',','.'));if(!isFinite(x))x=def;if(x<min)x=min;if(max!==null&&x>max)x=max;return x};
 
 let pos=[];
-function mkP(n='Деталь',q=1,a=0.5,t=1.5,c=5,p=5,b=2){return{id:Date.now()+Math.random(),n,q,a,t,c,p,b}}
+function mkP(n='Деталь',q=1,a=0.5,t=1.5,c=5,p=5,b=2,w=500,h=400){return{id:Date.now()+Math.random(),n,q,a,t,c,p,b,w,h}}
 
 function rP(){
   const b=$('posB');b.innerHTML='';
@@ -171,6 +171,8 @@ function rP(){
     const tr=document.createElement('tr');
     tr.innerHTML=`<td><input value="${esc(p.n)}" oninput="upP(${i},'n',this.value)"></td>
     <td><input type="number" value="${p.q}" min="1" oninput="upP(${i},'q',this.value)"></td>
+    <td><input type="number" value="${p.w||500}" min="0" step="1" oninput="upP(${i},'w',this.value)" style="width:60px"></td>
+    <td><input type="number" value="${p.h||400}" min="0" step="1" oninput="upP(${i},'h',this.value)" style="width:60px"></td>
     <td><input type="number" value="${p.a}" min="0.001" step="0.01" oninput="upP(${i},'a',this.value)"></td>
     <td><input type="number" value="${p.t}" min="0.5" max="25" step="0.1" oninput="upP(${i},'t',this.value)"></td>
     <td><input type="number" value="${p.c}" min="0" step="0.5" oninput="upP(${i},'c',this.value)"></td>
@@ -183,7 +185,7 @@ function rP(){
 }
 function addPos(){pos.push(mkP('Поз.'+(pos.length+1)));rP();calc();sav()}
 function delP(i){if(pos.length<=1)return alert('Хотя бы одна позиция');pos.splice(i,1);rP();calc();sav()}
-function upP(i,k,val){if(k==='n')pos[i][k]=val;else{pos[i][k]=parseFloat(String(val).replace(',','.'))||0;if(k==='q'&&pos[i][k]<1)pos[i][k]=1}calc();sav()}
+function upP(i,k,val){if(k==='n'){pos[i][k]=val}else{pos[i][k]=parseFloat(String(val).replace(',','.'))||0;if(k==='q'&&pos[i][k]<1)pos[i][k]=1;if((k==='w'||k==='h')&&pos[i].w>0&&pos[i].h>0){pos[i].a=+(pos[i].w*pos[i].h/1e6).toFixed(4)}}calc();sav();if(k==='w'||k==='h')rP()}
 function onCut(){$('cutP').value=$('cutType').value;calc()}
 
 function calc(){
@@ -321,7 +323,7 @@ function buildP(){
       var wrap = document.createElement('div');
       wrap.style.pageBreakBefore = 'always';
       wrap.style.marginTop = '20px';
-      var items = pos.map(function(p){ return { name: p.n, count: p.q, w: 500, h: 400 }; });
+      var items = pos.map(function(p){ return { name: p.n, count: p.q, w: p.w||500, h: p.h||400 }; });
       var res = window.fpNest(2500, 1250, 10, items);
       var st = window.fpNestStats(res, 2500, 1250);
       wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + window.fpNestSVG(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
