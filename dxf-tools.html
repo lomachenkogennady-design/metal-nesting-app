@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DXF + Раскрой — ФАЙЕРПРОМ</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--txt:#2d3748;--acc:#3182ce;--brd:#e2e8f0;--hint:#718096}
+body.dark{--bg:#1a202c;--card:#2d3748;--txt:#e2e8f0;--acc:#63b3ed;--brd:#4a5568;--hint:#a0aec0}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{background:var(--bg);color:var(--txt);padding:12px;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;background:var(--card);padding:20px;border-radius:12px}
+h1{font-size:18px;margin-bottom:6px;color:var(--acc)}
+h2{font-size:13px;margin:14px 0 8px;color:var(--acc);text-transform:uppercase;border-bottom:1px solid var(--brd);padding-bottom:4px}
+.sub{font-size:12px;color:var(--hint);margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>div{flex:1 1 140px}
+label{display:block;font-size:11px;color:var(--hint);margin:6px 0 3px}
+input,select,button{padding:8px 10px;border:1px solid var(--brd);border-radius:6px;font-size:13px}
+input,select{width:100%;background:var(--card);color:var(--txt)}
+button{background:var(--acc);color:#fff;border:none;font-weight:600;cursor:pointer;margin:3px 2px}
+button.gh{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+canvas{display:block;max-width:100%;background:#fafafa;border:1px solid var(--brd);border-radius:6px;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+th,td{padding:5px 4px;border-bottom:1px solid var(--brd);text-align:left}
+th{background:var(--bg);font-size:11px;color:var(--hint)}
+.metric{display:inline-block;background:var(--bg);padding:6px 10px;margin:3px 4px 3px 0;border-radius:6px;font-size:12px}
+.metric b{color:var(--acc);font-size:14px}
+.warn{color:#92400e;font-size:12px}
+.ok{color:#22543d}
+a.back{display:inline-block;margin-top:14px;color:var(--acc);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>DXF и раскрой <span style="font-size:12px;color:var(--hint)">v1 · ФАЙЕРПРОМ</span></h1>
+<div class="sub">Лазерная резка до 5 мм · лист 2500×1250 мм · поле 2990×1490</div>
+<button class="gh" onclick="document.body.classList.toggle('dark')" style="float:right;margin-top:-40px">Тема</button>
+<h2>1. Загрузить DXF</h2>
+<input type="file" id="fileIn" accept=".dxf">
+<div id="metrics"></div>
+<canvas id="preview" width="800" height="400"></canvas>
+<button id="addBtn" class="gh" onclick="addToKP()" disabled>В список деталей</button>
+<h2>2. Раскрой на лист</h2>
+<div class="row">
+<div><label>Лист</label><select id="sheetSel">
+<option value="2500x1250">2500 x 1250 (стандарт)</option>
+<option value="2490x1240">2490 x 1240 (раскрой)</option>
+<option value="3000x1500">3000 x 1500</option>
+<option value="2000x1000">2000 x 1000</option>
+<option value="custom">Свой</option>
+</select></div>
+<div><label>Ширина мм</label><input type="number" id="sheetW" value="2500"></div>
+<div><label>Высота мм</label><input type="number" id="sheetH" value="1250"></div>
+<div><label>Отступ мм</label><input type="number" id="margin" value="10"></div>
+</div>
+<button onclick="runNest()">Рассчитать раскрой</button>
+<canvas id="nestCanvas" width="800" height="500"></canvas>
+<div id="nestInfo"></div>
+<h2>3. Список деталей</h2>
+<table id="partsT"><thead><tr>
+<th>Наим.</th><th>Кол.</th><th>Ш</th><th>В</th><th>Рез м</th><th>Пл. м2</th><th></th>
+</tr></thead><tbody id="partsB"></tbody></table>
+<a href="index.html" class="back">К калькулятору КП</a>
+</div>
+<script>
+var parts=[],lastDXF=null;
+function $(id){return document.getElementById(id)}
+function parseDXF(text){
+var lines=text.split(/\r?\n/),ents=[],cur=null,i=0;
+while(i<lines.length-1){
+var code=lines[i].trim(),val=lines[i+1].trim();i+=2;
+if(code==='0'){
+if(cur&&cur.type)ents.push(cur);
+if(val==='SECTION'){cur=null;continue}
+if(val==='ENDSEC'){cur=null;continue}
+if(val==='LINE')cur={type:'line',x1:0,y1:0,x2:0,y2:0};
+else if(val==='LWPOLYLINE')cur={type:'poly',pts:[],closed:false,tx:0};
+else if(val==='POLYLINE')cur={type:'poly',pts:[],closed:false,tx:0};
+else if(val==='CIRCLE')cur={type:'circle',cx:0,cy:0,r:0};
+else if(val==='ARC')cur={type:'arc',cx:0,cy:0,r:0,a1:0,a2:0};
+else cur=null;
+continue;
+}
+if(!cur)continue;
+var f=parseFloat(val);
+if(cur.type==='line'){
+if(code==='10')cur.x1=f;
+if(code==='20')cur.y1=f;
+if(code==='11')cur.x2=f;
+if(code==='21')cur.y2=f;
+}else if(cur.type==='poly'){
+if(code==='10')cur.tx=f;
+if(code==='20')cur.pts.push([cur.tx,f]);
+if(code==='70')cur.closed=(parseInt(val)&1)===1;
+}else if(cur.type==='circle'){
+if(code==='10')cur.cx=f;
+if(code==='20')cur.cy=f;
+if(code==='40')cur.r=f;
+}else if(cur.type==='arc'){
+if(code==='10')cur.cx=f;
+if(code==='20')cur.cy=f;
+if(code==='40')cur.r=f;
+if(code==='50')cur.a1=f;
+if(code==='51')cur.a2=f;
+}
+}
+if(cur&&cur.type)ents.push(cur);
+return ents;
+}
+function shoelace(pts){
+var s=0;
+for(var i=0;i<pts.length;i++){
+var x1=pts[i][0],y1=pts[i][1];
+var x2=pts[(i+1)%pts.length][0],y2=pts[(i+1)%pts.length][1];
+s+=x1*y2-x2*y1;
+}
+return s/2;
+}
+function dist(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1)}
+function analyze(ents){
+var cut=0,area=0,pts=[];
+ents.forEach(function(e){
+if(e.type==='line'){
+cut+=dist(e.x1,e.y1,e.x2,e.y2);
+pts.push([e.x1,e.y1],[e.x2,e.y2]);
+}else if(e.type==='poly'){
+e.pts.forEach(function(p){pts.push(p)});
+if(e.pts.length>1){
+for(var i=0;i<e.pts.length-1;i++){
+cut+=dist(e.pts[i][0],e.pts[i][1],e.pts[i+1][0],e.pts[i+1][1]);
+}
+if(e.closed&&e.pts.length>=3){
+var f=e.pts[0],l=e.pts[e.pts.length-1];
+cut+=dist(l[0],l[1],f[0],f[1]);
+area+=Math.abs(shoelace(e.pts));
+}
+}
+}else if(e.type==='circle'){
+cut+=2*Math.PI*e.r;
+area+=Math.PI*e.r*e.r;
+pts.push([e.cx+e.r,e.cy+e.r],[e.cx-e.r,e.cy-e.r]);
+}else if(e.type==='arc'){
+var a=e.a2-e.a1;
+if(a<0)a+=360;
+cut+=e.r*a*Math.PI/180;
+pts.push([e.cx+e.r,e.cy+e.r],[e.cx-e.r,e.cy-e.r]);
+}
+});
+var mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
+pts.forEach(function(p){
+if(p[0]<mnX)mnX=p[0];if(p[1]<mnY)mnY=p[1];
+if(p[0]>mxX)mxX=p[0];if(p[1]>mxY)mxY=p[1];
+});
+if(!isFinite(mnX)){mnX=mnY=mxX=mxY=0}
+return{cutM:cut/1000,areaM2:area/1e6,bbox:{minX:mnX,minY:mnY,maxX:mxX,maxY:mxY,w:mxX-mnX,h:mxY-mnY}};
+}
+function drawPreview(ents,bbox){
+var c=$('preview');c.width=800;c.height=400;
+var ctx=c.getContext('2d');
+ctx.clearRect(0,0,c.width,c.height);
+if(!ents.length)return;
+var pad=20;
+var s=Math.min((c.width-pad*2)/(bbox.w||1),(c.height-pad*2)/(bbox.h||1));
+var ox=pad+(c.width-pad*2-bbox.w*s)/2;
+var oy=pad+(c.height-pad*2-bbox.h*s)/2;
+function tx(x){return ox+(x-bbox.minX)*s}
+function ty(y){return c.height-(oy+(y-bbox.minY)*s)}
+ctx.strokeStyle='#3182ce';ctx.lineWidth=1.5;ctx.beginPath();
+ents.forEach(function(e){
+if(e.type==='line'){
+ctx.moveTo(tx(e.x1),ty(e.y1));
+ctx.lineTo(tx(e.x2),ty(e.y2));
+}else if(e.type==='poly'){
+if(e.pts.length<2)return;
+ctx.moveTo(tx(e.pts[0][0]),ty(e.pts[0][1]));
+for(var i=1;i<e.pts.length;i++)ctx.lineTo(tx(e.pts[i][0]),ty(e.pts[i][1]));
+if(e.closed)ctx.closePath();
+}else if(e.type==='circle'){
+ctx.moveTo(tx(e.cx+e.r),ty(e.cy));
+ctx.arc(tx(e.cx),ty(e.cy),e.r*s,0,Math.PI*2);
+}else if(e.type==='arc'){
+var a1=-e.a1*Math.PI/180,a2=-e.a2*Math.PI/180;
+ctx.moveTo(tx(e.cx+e.r*Math.cos(a1)),ty(e.cy+e.r*Math.sin(a1)));
+ctx.arc(tx(e.cx),ty(e.cy),e.r*s,a1,a2,true);
+}
+});
+ctx.stroke();
+ctx.strokeStyle='#cbd5e0';ctx.setLineDash([4,4]);
+ctx.strokeRect(tx(bbox.minX),ty(bbox.maxY),bbox.w*s,bbox.h*s);
+ctx.setLineDash([]);
+}
+$('fileIn').addEventListener('change',function(e){
+var f=e.target.files[0];
+if(!f)return;
+var r=new FileReader();
+r.onload=function(ev){
+var ents=parseDXF(ev.target.result);
+var m=analyze(ents);
+if(!ents.length){
+$('metrics').innerHTML='<div class="warn">DXF не распознан</div>';
+$('addBtn').disabled=true;return;
+}
+$('metrics').innerHTML='<div class="metric">Длина реза: <b>'+m.cutM.toFixed(2)+' м</b></div>'+
+'<div class="metric">Площадь: <b>'+m.areaM2.toFixed(4)+' м2</b></div>'+
+'<div class="metric">Габарит: <b>'+m.bbox.w.toFixed(0)+' x '+m.bbox.h.toFixed(0)+' мм</b></div>'+
+'<div class="metric">Элементов: <b>'+ents.length+'</b></div>';
+drawPreview(ents,m.bbox);
+lastDXF={ents:ents,m:m,name:f.name.replace(/\.dxf$/i,'')};
+$('addBtn').disabled=false;
+};
+r.readAsText(f);
+});
+function addToKP(){
+if(!lastDXF)return;
+var nm=prompt('Наименование:',lastDXF.name||'Деталь');
+if(nm===null)return;
+var cnt=parseInt(prompt('Количество:','1'))||1;
+parts.push({id:Date.now()+Math.random(),name:nm,w:Math.round(lastDXF.m.bbox.w),h:Math.round(lastDXF.m.bbox.h),count:cnt,cut:+lastDXF.m.cutM.toFixed(2),area:+lastDXF.m.areaM2.toFixed(4)});
+renderParts();
+$('addBtn').disabled=true;
+lastDXF=null;
+$('fileIn').value='';
+}
+function renderParts(){
+var b=$('partsB');b.innerHTML='';
+parts.forEach(function(p,i){
+var tr=document.createElement('tr');
+tr.innerHTML='<td>'+p.name+'</td><td>'+p.count+'</td><td>'+p.w+'</td><td>'+p.h+'</td><td>'+p.cut+'</td><td>'+p.area+'</td>'+
+'<td><button style="padding:2px 6px;background:#718096;color:#fff;border:none;border-radius:4px" onclick="delPart('+i+')">x</button></td>';
+b.appendChild(tr);
+});
+}
+function delPart(i){parts.splice(i,1);renderParts()}
+function nest(sw,sh,mg,items){
+var flat=[];
+items.forEach(function(p){for(var i=0;i<p.count;i++)flat.push({name:p.name,w:p.w,h:p.h})});
+flat.sort(function(a,b){return (b.w*b.h)-(a.w*a.h)});
+var res=[],sidx=0,cx=0,cy=0,rh=0;
+var W=sw-mg,H=sh-mg;
+flat.forEach(function(it){
+var w=it.w,h=it.h;
+if(w>W&&h<=W&&w<=H){var t=w;w=h;h=t}
+if(cx+w+mg>W){cx=0;cy+=rh+mg;rh=0}
+if(cy+h+mg>H){sidx++;cx=0;cy=0;rh=0}
+res.push({sheet:sidx,x:cx,y:cy,w:w,h:h,name:it.name});
+cx+=w+mg;
+if(h>rh)rh=h;
+});
+return res;
+}
+function runNest(){
+if(!parts.length){alert('Добавьте детали');return}
+var sel=$('sheetSel').value,sw,sh;
+if(sel==='custom'){sw=+$('sheetW').value||2500;sh=+$('sheetH').value||1250}
+else{var arr=sel.split('x');sw=+arr[0];sh=+arr[1];$('sheetW').value=sw;$('sheetH').value=sh}
+var mg=+$('margin').value||10;
+var r=nest(sw,sh,mg,parts);
+var maxS=0;
+r.forEach(function(x){if(x.sheet>maxS)maxS=x.sheet});
+var sheets=maxS+1;
+var totArea=0;
+parts.forEach(function(p){totArea+=p.area*p.count});
+var totSheet=sheets*(sw*sh/1e6);
+var usage=totSheet>0?(totArea/totSheet*100):0;
+$('nestInfo').innerHTML='<div class="metric">Листов: <b>'+sheets+'</b></div>'+
+'<div class="metric">Пл. деталей: <b>'+totArea.toFixed(3)+' м2</b></div>'+
+'<div class="metric">Пл. листов: <b>'+totSheet.toFixed(3)+' м2</b></div>'+
+'<div class="metric">Использование: <b>'+usage.toFixed(1)+'%</b></div>';
+drawNest(r,sw,sh,sheets);
+}
+function drawNest(res,sw,sh,sc){
+var c=$('nestCanvas');var ctx=c.getContext('2d');
+var show=Math.min(sc,3);
+var pad=20,gap=30;
+var totalH=show*sh+(show-1)*gap;
+c.width=800;
+c.height=Math.max(400,(c.width-pad*2)*(totalH/sw)+pad*2);
+var s=(c.width-pad*2)/sw;
+ctx.clearRect(0,0,c.width,c.height);
+ctx.font='11px system-ui';
+var oy=pad;
+for(var i=0;i<show;i++){
+var ox=pad;
+ctx.fillStyle='#f8fafc';ctx.strokeStyle='#3182ce';ctx.lineWidth=2;
+ctx.fillRect(ox,oy,sw*s,sh*s);
+ctx.strokeRect(ox,oy,sw*s,sh*s);
+res.filter(function(r){return r.sheet===i}).forEach(function(r){
+var x=ox+r.x*s,y=oy+r.y*s,w=r.w*s,h=r.h*s;
+ctx.fillStyle='rgba(49,130,206,0.2)';
+ctx.strokeStyle='#2b6cb0';ctx.lineWidth=1.5;
+ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
+if(w>40&&h>16){
+ctx.fillStyle='#1a202c';
+ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+ctx.fillText(r.name||'',x+3,y+13);
+ctx.restore();
+}
+});
+ctx.fillStyle='#4a5568';
+ctx.fillText('Лист '+(i+1)+' - '+sw+'x'+sh+' мм',ox,oy-6);
+oy+=sh*s+gap;
+}
+if(sc>show){
+ctx.fillStyle='#92400e';
+ctx.fillText('... ещё '+(sc-show)+' листов (показаны первые 3)',pad,oy+12);
+}
+}
+$('sheetSel').addEventListener('change',function(e){
+if(e.target.value!=='custom'){
+var arr=e.target.value.split('x');
+$('sheetW').value=+arr[0];
+$('sheetH').value=+arr[1];
+}
+});
+</script>
+</body>
+</html>
