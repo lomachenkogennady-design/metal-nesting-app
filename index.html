@@ -49,6 +49,7 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 </head>
 <body>
 <script src="shared.js"></script>
+<script src="nest.js"></script>
 <div class="wrap" id="app">
 <h1 class="brand">🏭 ФАЙЕРПРОМ v2 — Калькулятор КП <span class="badge">MAX</span></h1>
 <button class="gh" onclick="toggleTheme()" style="float:right;margin-top:-38px">🌓</button>
@@ -314,6 +315,19 @@ function buildP(){
   if(pm==='inv')h+=`<div style="font-size:10px;margin-top:10px;border:1px solid #999;padding:6px"><b>Банк:</b> ${esc($('cBank').value||'—')}<br>Р/с ${esc($('cRS').value||'—')} · К/с ${esc($('cKS').value||'—')} · БИК ${esc($('cBIK').value||'—')}</div>`;
   h+=`<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:10.5px"><div style="border-top:1px solid #000;width:45%;padding-top:3px">Исполнитель: ${esc($('mName').value||'—')}</div><div style="border-top:1px solid #000;width:45%;padding-top:3px">Заказчик: ${esc($('kName').value||'—')}</div></div>`;
   $('po').innerHTML=h;
+  try {
+    if (window.fpNest && window.fpNestSVG && window.fpNestStats && pos.length) {
+      var po = document.getElementById('po');
+      var wrap = document.createElement('div');
+      wrap.style.pageBreakBefore = 'always';
+      wrap.style.marginTop = '20px';
+      var items = pos.map(function(p){ return { name: p.n, count: p.q, w: 500, h: 400 }; });
+      var res = window.fpNest(2500, 1250, 10, items);
+      var st = window.fpNestStats(res, 2500, 1250);
+      wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + window.fpNestSVG(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
+      po.appendChild(wrap);
+    }
+  } catch(e){}
 }
 
 function rst(){if(!confirm('Сбросить всё?'))return;localStorage.removeItem(LS);location.hash='';location.reload()}
