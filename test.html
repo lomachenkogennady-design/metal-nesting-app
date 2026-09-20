@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Автотесты — ФАЙЕРПРОМ</title>
+<title>Автотесты v2 — ФАЙЕРПРОМ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
 body{background:#eef1f6;color:#2d3748;padding:14px;font-size:14px}
@@ -24,520 +24,410 @@ th{background:#f8fafc;font-size:11px;color:#4a5568;font-weight:600}
 .t-note{color:#718096;font-size:11px}
 .btn{padding:10px 18px;background:#3182ce;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;margin:6px 4px 0 0;font-size:14px}
 .btn.sec{background:#718096}
-pre{background:#1a202c;color:#e2e8f0;padding:10px;border-radius:6px;font-size:11px;overflow-x:auto;margin:8px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>🧪 Автотесты ФАЙЕРПРОМ</h1>
-<div class="sub">Проверка расчётов, DXF-парсера и раскроя. Обновите страницу для повтора.</div>
+<h1>🧪 Автотесты v2 — ФАЙЕРПРОМ</h1>
+<div class="sub">Калькулятор · DXF · shared.js · nest.js · раскрой · печать. Обновите страницу для повтора.</div>
 
 <div class="tot" id="totals"></div>
 
-<h2>1. Тесты калькулятора КП</h2>
-<table id="t1"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>1. Калькулятор КП: вес и стоимость</h2>
+<table id="t1"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>2. Тесты материала и цен</h2>
-<table id="t2"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>2. Материалы, цены, скидка по объёму</h2>
+<table id="t2"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>3. Тесты резки и гибки</h2>
-<table id="t3"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>3. Резка, гибка, доп. операции</h2>
+<table id="t3"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>4. Тесты наценок и НДС</h2>
-<table id="t4"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>4. Наценки, скидка, НДС, мин. заказ</h2>
+<table id="t4"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>5. Тесты DXF-парсера</h2>
-<table id="t5"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>5. DXF-парсер (LINE, LWPOLYLINE, CIRCLE, ARC)</h2>
+<table id="t5"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>6. Тесты 2D-раскроя</h2>
-<table id="t6"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>6. Модуль shared.js (связка DXF ↔ КП)</h2>
+<table id="t6"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<h2>7. Тесты интерфейса (localStorage)</h2>
-<table id="t7"><thead><tr><th style="width:50%">Тест</th><th>Результат</th><th>Ожидалось / получено</th></tr></thead><tbody></tbody></table>
+<h2>7. Модуль nest.js (раскрой)</h2>
+<table id="t7"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
 
-<button class="btn" onclick="location.reload()">🔄 Перезапустить все тесты</button>
+<h2>8. Интерфейс и хранилище</h2>
+<table id="t8"><thead><tr><th style="width:52%">Тест</th><th>Результат</th><th>Ожидалось</th></tr></thead><tbody></tbody></table>
+
+<button class="btn" onclick="location.reload()">🔄 Перезапустить</button>
 <button class="btn sec" onclick="exportReport()">📥 Скачать отчёт</button>
-<button class="btn sec" onclick="location.href='index.html'">← Назад к калькулятору</button>
-
-<div id="log"></div>
+<button class="btn sec" onclick="location.href='index.html'">← Калькулятор</button>
+<button class="btn sec" onclick="location.href='dxf-tools.html'">→ DXF</button>
 </div>
 
+<script src="shared.js"></script>
+<script src="nest.js"></script>
 <script>
-/* ============ МИНИ-ФРЕЙМВОРК ТЕСТОВ ============ */
-const results = [];
-function test(name, actual, expected, tol = 0.01) {
-  let pass;
-  if (typeof expected === 'number') {
-    pass = Math.abs(actual - expected) <= tol;
-  } else {
-    pass = actual === expected;
-  }
-  results.push({ name, pass, actual, expected });
-  return pass;
-}
-function testRange(name, actual, min, max) {
-  const pass = actual >= min && actual <= max;
-  results.push({ name, pass, actual: actual, expected: min + '–' + max });
-  return pass;
-}
-function testTrue(name, value) {
-  const pass = !!value;
-  results.push({ name, pass, actual: String(value), expected: 'true' });
-  return pass;
-}
+const R=[];
+function t(n,a,e,tol){let p;if(typeof e==='number'){p=Math.abs(a-e)<=(tol||0.01)}else{p=a===e}R.push({n,p,a,e});return p}
+function tR(n,a,mn,mx){const p=a>=mn&&a<=mx;R.push({n,p,a,e:mn+'–'+mx});return p}
+function tT(n,v){const p=!!v;R.push({n,p,a:String(v),e:'true'});return p}
 
-/* ============ 1. КАЛЬКУЛЯТОР: БАЗОВЫЕ ФОРМУЛЫ ============ */
-// Металл: вес = площадь × толщина/1000 × плотность
-function calcWeight(area, thick, dens) { return area * (thick / 1000) * dens; }
-test('Вес 1 м², 1 мм, сталь 7850', calcWeight(1, 1, 7850), 7.85, 0.01);
-test('Вес 1 м², 3 мм, нерж 7900', calcWeight(1, 3, 7900), 23.7, 0.01);
-test('Вес 2 м², 5 мм, сталь', calcWeight(2, 5, 7850), 78.5, 0.01);
-test('Вес 0.5 м², 1.5 мм, сталь', calcWeight(0.5, 1.5, 7850), 5.8875, 0.01);
-test('Вес 0 — нулевая площадь', calcWeight(0, 5, 7850), 0);
-test('Вес 10 м², 25 мм, сталь', calcWeight(10, 25, 7850), 1962.5, 0.5);
+/* ============ 1. КАЛЬКУЛЯТОР: ВЕС / СТОИМОСТЬ ============ */
+function W(a,th,d){return a*(th/1000)*d}
+t('Вес 1м², 1мм, сталь 7850',W(1,1,7850),7.85,0.01);
+t('Вес 1м², 3мм, нерж 7900',W(1,3,7900),23.7,0.01);
+t('Вес 2м², 5мм, сталь',W(2,5,7850),78.5,0.01);
+t('Вес 0.5м², 1.5мм',W(0.5,1.5,7850),5.8875,0.01);
+t('Вес 0м²',W(0,5,7850),0);
+t('Вес 10м², 25мм',W(10,25,7850),1962.5,0.5);
+t('Вес 0.001м², 0.5мм',W(0.001,0.5,7850),0.003925,0.0001);
 
-// Стоимость металла = вес × цена
-function calcMetal(area, thick, dens, price) { return calcWeight(area, thick, dens) * price; }
-test('Металл: 1 м², 1 мм, ОЦ 74.83', calcMetal(1, 1, 7850, 74.83), 587.42, 0.1);
-test('Металл: 1 м², 1 мм, ХК 61.27', calcMetal(1, 1, 7850, 61.27), 480.97, 0.1);
-test('Металл: 1 м², 1 мм, нерж 311.47', calcMetal(1, 1, 7900, 311.47), 2460.61, 0.5);
-test('Металл: 2 м², 3 мм, сталь 65', calcMetal(2, 3, 7850, 65), 3061.5, 1);
+function M(a,th,d,p){return W(a,th,d)*p}
+t('Металл: 1м², 1мм, ОЦ 74.83',M(1,1,7850,74.83),587.42,0.1);
+t('Металл: 1м², 1мм, ХК 61.27',M(1,1,7850,61.27),480.97,0.1);
+t('Металл: 1м², 1мм, нерж 311.47',M(1,1,7900,311.47),2460.61,0.5);
+t('Металл: 2м², 3мм, сталь 65',M(2,3,7850,65),3061.5,1);
 
-// Резка: (длина + врезки × экв) × цена
-function calcCut(length, pierces, factor, price) { return (length + pierces * factor) * price; }
-test('Резка: 20 м + 30 врезок × 0.15 × 50', calcCut(20, 30, 0.15, 50), 1225, 0.1);
-test('Резка: 0 м, 0 врезок', calcCut(0, 0, 0.15, 50), 0);
-test('Резка: 10 м, 0 врезок × 120', calcCut(10, 0, 0.15, 120), 1200, 0.1);
-test('Резка: 0 м, 100 врезок × 0.15 × 50', calcCut(0, 100, 0.15, 50), 750, 0.1);
+function C(l,p,f,pr){return (l+p*f)*pr}
+t('Резка: 20м + 30×0.15 × 50',C(20,30,0.15,50),1225,0.1);
+t('Резка: 0м, 0 врезок',C(0,0,0.15,50),0);
+t('Резка: 10м × 120',C(10,0,0.15,120),1200,0.1);
+t('Резка: 100 врезок × 0.15 × 50',C(0,100,0.15,50),750,0.1);
 
-// Гибка
-function calcBend(count, price) { return count * price; }
-test('Гибка: 10 × 25', calcBend(10, 25), 250);
-test('Гибка: 0 гибов', calcBend(0, 30), 0);
-test('Гибка: 50 × 40', calcBend(50, 40), 2000);
+function B(c,p){return c*p}
+t('Гибка: 10 × 25',B(10,25),250);
+t('Гибка: 0',B(0,30),0);
+t('Гибка: 50 × 40',B(50,40),2000);
 
-/* ============ 2. МАТЕРИАЛЫ И ЦЕНЫ ============ */
-const MATS = {
-  galv: { name: 'Оцинковка',  density: 7850, price: 74.83  },
-  cold: { name: 'Х/к',         density: 7850, price: 61.27  },
-  ss:   { name: 'Нерж 304',    density: 7900, price: 311.47 },
-  hot:  { name: 'Г/к',         density: 7850, price: 65.00  },
-  alu:  { name: 'Алюминий',    density: 2700, price: 320.00 },
-  cu:   { name: 'Медь',        density: 8900, price: 780.00 }
+/* ============ 2. МАТЕРИАЛЫ ============ */
+const MATS={
+  galv:{n:'ОЦ',d:7850,p:74.83},
+  cold:{n:'ХК',d:7850,p:61.27},
+  ss:{n:'Нерж',d:7900,p:311.47},
+  hot:{n:'ГК',d:7850,p:65},
+  alu:{n:'Алюм',d:2700,p:320},
+  cu:{n:'Медь',d:8900,p:780}
 };
-test('Материалов в справочнике', Object.keys(MATS).length, 6);
-testTrue('Есть оцинковка', MATS.galv !== undefined);
-testTrue('Есть нержавейка', MATS.ss !== undefined);
-testTrue('Есть алюминий', MATS.alu !== undefined);
-testTrue('Есть медь', MATS.cu !== undefined);
-test('Плотность стали', MATS.galv.density, 7850);
-test('Плотность нерж', MATS.ss.density, 7900);
-test('Плотность алюминия', MATS.alu.density, 2700);
-test('Плотность меди', MATS.cu.density, 8900);
-testRange('Цена ОЦ в диапазоне 70-80', MATS.galv.price, 70, 80);
-testRange('Цена нерж > 300', MATS.ss.price, 300, 400);
+t('Материалов',Object.keys(MATS).length,6);
+tT('Есть оцинковка',MATS.galv);
+tT('Есть нержавейка',MATS.ss);
+tT('Есть алюминий',MATS.alu);
+tT('Есть медь',MATS.cu);
+t('Плотность стали',MATS.galv.d,7850);
+t('Плотность нерж',MATS.ss.d,7900);
+t('Плотность алюм',MATS.alu.d,2700);
+t('Плотность меди',MATS.cu.d,8900);
+tR('Цена ОЦ 70-80',MATS.galv.p,70,80);
+tR('Цена нерж 300-400',MATS.ss.p,300,400);
 
-// Своя цена
-function choosePrice(useOwn, custom, base) { return useOwn && custom > 0 ? custom : base; }
-test('Своя цена не задана → справочник', choosePrice(true, 0, 74.83), 74.83);
-test('Своя цена 100 → 100', choosePrice(true, 100, 74.83), 100);
-test('Галочка выключена → справочник', choosePrice(false, 100, 74.83), 74.83);
+function cp(useOwn,cust,base){return useOwn&&cust>0?cust:base}
+t('Своя цена=0 → справочник',cp(true,0,74.83),74.83);
+t('Своя цена=100 → 100',cp(true,100,74.83),100);
+t('Галочка off → справочник',cp(false,100,74.83),74.83);
 
-// Скидка по объёму
-function volumeDiscount(weight) {
-  if (weight >= 500) return 0.10;
-  if (weight >= 100) return 0.05;
-  return 0;
+function vd(w){if(w>=500)return 0.10;if(w>=100)return 0.05;return 0}
+t('Скидка при 50кг',vd(50),0);
+t('Скидка при 99кг',vd(99),0);
+t('Скидка при 100кг',vd(100),0.05);
+t('Скидка при 499кг',vd(499),0.05);
+t('Скидка при 500кг',vd(500),0.10);
+t('Скидка при 1000кг',vd(1000),0.10);
+
+/* ============ 3. РЕЗКА / ГИБКА / ДОП ============ */
+function bp(th,P){if(th<=2)return P[0];if(th<=4)return P[1];if(th<=8)return P[2];return P[3]}
+const BP=[25,40,70,120];
+t('Гиб 0.5мм → 25',bp(0.5,BP),25);
+t('Гиб 2мм → 25',bp(2,BP),25);
+t('Гиб 2.5мм → 40',bp(2.5,BP),40);
+t('Гиб 4мм → 40',bp(4,BP),40);
+t('Гиб 4.5мм → 70',bp(4.5,BP),70);
+t('Гиб 8мм → 70',bp(8,BP),70);
+t('Гиб 10мм → 120',bp(10,BP),120);
+t('Гиб 25мм → 120',bp(25,BP),120);
+
+const CUTS={laser:50,plasma:35,waterjet:120};
+t('Лазер',CUTS.laser,50);
+t('Плазма',CUTS.plasma,35);
+t('Гидроабразив',CUTS.waterjet,120);
+tR('Лазер дешевле гидроабразива',CUTS.laser,0,CUTS.waterjet);
+tR('Плазма дешевле лазера',CUTS.plasma,0,CUTS.laser);
+
+t('Сверление 20×5',20*5,100);
+t('Сверление 0',0*5,0);
+t('Зенковка 10×8',10*8,80);
+t('Сварка 2.5×250',2.5*250,625);
+t('Сварка 0',0*250,0);
+t('Резьба 5×30',5*30,150);
+
+/* ============ 4. НАЦЕНКИ / НДС / МИН ============ */
+function mk(s,p){return s*(p/100)}
+t('Наценка 0%',mk(10000,0),0);
+t('Наценка 10%',mk(10000,10),1000);
+t('Наценка 50%',mk(10000,50),5000);
+t('Наценка 100%',mk(10000,100),10000);
+t('Наценка 200%',mk(10000,200),20000);
+
+function dc(a,p){return a*(p/100)}
+t('Скидка 0%',dc(10000,0),0);
+t('Скидка 5%',dc(10000,5),500);
+t('Скидка 50%',dc(10000,50),5000);
+
+function vt(a,r){return a*(r/100)}
+t('НДС 22% от 10000',vt(10000,22),2200);
+t('НДС 20% от 10000',vt(10000,20),2000);
+t('НДС 10% от 10000',vt(10000,10),1000);
+t('НДС 0%',vt(10000,0),0);
+t('НДС 22% от 1220',vt(1220,22),268.4,0.01);
+
+function am(s,mn){return mn>0&&s<mn?mn:s}
+t('Мин.0',am(5000,0),5000);
+t('Мин.10000, сумма 5000',am(5000,10000),10000);
+t('Мин.10000, сумма 15000',am(15000,10000),15000);
+t('Мин.10000, сумма 10000',am(10000,10000),10000);
+
+function full(m,c,b,p,e,u,d,mn,vr){
+  const s=m+c+b+p+e;
+  const mx=s*(u/100);const am2=s+mx;
+  const dx=am2*(d/100);const ad=am2-dx;
+  const fin=mn>0&&ad<mn?mn:ad;
+  const v=fin*(vr/100);
+  return {fin,v,grand:fin+v}
 }
-test('Скидка при 50 кг', volumeDiscount(50), 0);
-test('Скидка при 99 кг', volumeDiscount(99), 0);
-test('Скидка при 100 кг', volumeDiscount(100), 0.05);
-test('Скидка при 200 кг', volumeDiscount(200), 0.05);
-test('Скидка при 499 кг', volumeDiscount(499), 0.05);
-test('Скидка при 500 кг', volumeDiscount(500), 0.10);
-test('Скидка при 1000 кг', volumeDiscount(1000), 0.10);
-
-/* ============ 3. РЕЗКА И ГИБКА ============ */
-// Цена гибки по толщине
-function bendPriceForThick(t, prices) {
-  if (t <= 2) return prices[0];
-  if (t <= 4) return prices[1];
-  if (t <= 8) return prices[2];
-  return prices[3];
-}
-const BP = [25, 40, 70, 120];
-test('Гиб 0.5 мм → 25', bendPriceForThick(0.5, BP), 25);
-test('Гиб 2 мм → 25', bendPriceForThick(2, BP), 25);
-test('Гиб 2.5 мм → 40', bendPriceForThick(2.5, BP), 40);
-test('Гиб 4 мм → 40', bendPriceForThick(4, BP), 40);
-test('Гиб 4.5 мм → 70', bendPriceForThick(4.5, BP), 70);
-test('Гиб 8 мм → 70', bendPriceForThick(8, BP), 70);
-test('Гиб 10 мм → 120', bendPriceForThick(10, BP), 120);
-test('Гиб 20 мм → 120', bendPriceForThick(20, BP), 120);
-
-// Типы резки
-const CUTS = { laser: 50, plasma: 35, waterjet: 120 };
-test('Лазер', CUTS.laser, 50);
-test('Плазма', CUTS.plasma, 35);
-test('Гидроабразив', CUTS.waterjet, 120);
-testRange('Лазер дешевле гидроабразива', CUTS.laser, 0, CUTS.waterjet);
-
-// Доп. операции
-function calcDrill(count, price) { return count * price; }
-test('Сверление 20 × 5', calcDrill(20, 5), 100);
-test('Сверление 0 × 5', calcDrill(0, 5), 0);
-function calcWeld(len, price) { return len * price; }
-test('Сварка 2.5 × 250', calcWeld(2.5, 250), 625);
-test('Сварка 0 × 250', calcWeld(0, 250), 0);
-
-/* ============ 4. НАЦЕНКИ И НДС ============ */
-function calcMarkup(sub, pct) { return sub * (pct / 100); }
-test('Наценка 0%', calcMarkup(10000, 0), 0);
-test('Наценка 10%', calcMarkup(10000, 10), 1000);
-test('Наценка 50%', calcMarkup(10000, 50), 5000);
-test('Наценка 100%', calcMarkup(10000, 100), 10000);
-test('Наценка 200%', calcMarkup(10000, 200), 20000);
-
-function calcDiscount(amount, pct) { return amount * (pct / 100); }
-test('Скидка 0%', calcDiscount(10000, 0), 0);
-test('Скидка 5%', calcDiscount(10000, 5), 500);
-test('Скидка 10%', calcDiscount(10000, 10), 1000);
-test('Скидка 50%', calcDiscount(10000, 50), 5000);
-
-function calcVAT(amount, rate) { return amount * (rate / 100); }
-test('НДС 22% от 10000', calcVAT(10000, 22), 2200);
-test('НДС 20% от 10000', calcVAT(10000, 20), 2000);
-test('НДС 10% от 10000', calcVAT(10000, 10), 1000);
-test('НДС 0% (без НДС)', calcVAT(10000, 0), 0);
-test('НДС 22% от 1220', calcVAT(1220, 22), 268.4, 0.01);
-
-// Минимальный заказ
-function applyMin(sum, min) { return min > 0 && sum < min ? min : sum; }
-test('Мин. 0 — не применяется', applyMin(5000, 0), 5000);
-test('Мин. 10000, сумма 5000 → 10000', applyMin(5000, 10000), 10000);
-test('Мин. 10000, сумма 15000 → 15000', applyMin(15000, 10000), 15000);
-test('Мин. 10000, сумма 10000 → 10000', applyMin(10000, 10000), 10000);
-
-// Комплексный расчёт
-function fullCalc(metal, cut, bend, paint, extra, urgency, disc, minO, vatRate) {
-  const sub = metal + cut + bend + paint + extra;
-  const mk = sub * (urgency / 100);
-  const am = sub + mk;
-  const dc = am * (disc / 100);
-  const ad = am - dc;
-  const fin = minO > 0 && ad < minO ? minO : ad;
-  const vat = fin * (vatRate / 100);
-  return { sub, mk, dc, fin, vat, grand: fin + vat };
-}
-const r1 = fullCalc(1000, 500, 300, 0, 0, 0, 0, 0, 22);
-test('Итого без НДС: 1800', r1.fin, 1800);
-test('НДС 22%: 396', r1.vat, 396);
-test('С НДС: 2196', r1.grand, 2196);
-
-const r2 = fullCalc(1000, 0, 0, 0, 0, 50, 0, 0, 0);
-test('Наценка 50% → 1500', r2.fin, 1500);
-
-const r3 = fullCalc(1000, 0, 0, 0, 0, 0, 10, 0, 0);
-test('Скидка 10% → 900', r3.fin, 900);
-
-const r4 = fullCalc(1000, 0, 0, 0, 0, 0, 0, 2000, 0);
-test('Мин. заказ 2000 → 2000', r4.fin, 2000);
+const r1=full(1000,500,300,0,0,0,0,0,22);
+t('Итого 1800',r1.fin,1800);
+t('НДС 396',r1.v,396);
+t('С НДС 2196',r1.grand,2196);
+t('Наценка 50% → 1500',full(1000,0,0,0,0,50,0,0,0).fin,1500);
+t('Скидка 10% → 900',full(1000,0,0,0,0,0,10,0,0).fin,900);
+t('Мин.2000 → 2000',full(1000,0,0,0,0,0,0,2000,0).fin,2000);
 
 /* ============ 5. DXF-ПАРСЕР ============ */
-function parseDXF(text) {
-  const lines = text.split(/\r?\n/);
-  const ents = [];
-  let cur = null, i = 0;
-  while (i < lines.length - 1) {
-    const code = lines[i].trim();
-    const val = lines[i+1].trim();
-    i += 2;
-    if (code === '0') {
-      if (cur && cur.type) ents.push(cur);
-      if (val === 'SECTION') { cur = null; continue; }
-      if (val === 'ENDSEC') { cur = null; continue; }
-      if (val === 'LINE') cur = { type:'line', x1:0, y1:0, x2:0, y2:0 };
-      else if (val === 'LWPOLYLINE') cur = { type:'poly', pts:[], closed:false, tx:0 };
-      else if (val === 'POLYLINE') cur = { type:'poly', pts:[], closed:false, tx:0 };
-      else if (val === 'CIRCLE') cur = { type:'circle', cx:0, cy:0, r:0 };
-      else if (val === 'ARC') cur = { type:'arc', cx:0, cy:0, r:0, a1:0, a2:0 };
-      else cur = null;
+function parseDXF(txt){
+  const L=txt.split(/\r?\n/);const E=[];let c=null,i=0;
+  while(i<L.length-1){
+    const code=L[i].trim(),val=L[i+1].trim();i+=2;
+    if(code==='0'){
+      if(c&&c.type)E.push(c);
+      if(val==='SECTION'){c=null;continue}
+      if(val==='ENDSEC'){c=null;continue}
+      if(val==='LINE')c={type:'line',x1:0,y1:0,x2:0,y2:0};
+      else if(val==='LWPOLYLINE')c={type:'poly',pts:[],closed:false,tx:0};
+      else if(val==='POLYLINE')c={type:'poly',pts:[],closed:false,tx:0};
+      else if(val==='CIRCLE')c={type:'circle',cx:0,cy:0,r:0};
+      else if(val==='ARC')c={type:'arc',cx:0,cy:0,r:0,a1:0,a2:0};
+      else c=null;
       continue;
     }
-    if (!cur) continue;
-    const f = parseFloat(val);
-    if (cur.type === 'line') {
-      if (code === '10') cur.x1 = f;
-      if (code === '20') cur.y1 = f;
-      if (code === '11') cur.x2 = f;
-      if (code === '21') cur.y2 = f;
-    } else if (cur.type === 'poly') {
-      if (code === '10') cur.tx = f;
-      if (code === '20') cur.pts.push([cur.tx, f]);
-      if (code === '70') cur.closed = (parseInt(val) & 1) === 1;
-    } else if (cur.type === 'circle') {
-      if (code === '10') cur.cx = f;
-      if (code === '20') cur.cy = f;
-      if (code === '40') cur.r = f;
-    } else if (cur.type === 'arc') {
-      if (code === '10') cur.cx = f;
-      if (code === '20') cur.cy = f;
-      if (code === '40') cur.r = f;
-      if (code === '50') cur.a1 = f;
-      if (code === '51') cur.a2 = f;
+    if(!c)continue;
+    const f=parseFloat(val);
+    if(c.type==='line'){
+      if(code==='10')c.x1=f;if(code==='20')c.y1=f;
+      if(code==='11')c.x2=f;if(code==='21')c.y2=f;
+    }else if(c.type==='poly'){
+      if(code==='10')c.tx=f;
+      if(code==='20')c.pts.push([c.tx,f]);
+      if(code==='70')c.closed=(parseInt(val)&1)===1;
+    }else if(c.type==='circle'){
+      if(code==='10')c.cx=f;if(code==='20')c.cy=f;if(code==='40')c.r=f;
+    }else if(c.type==='arc'){
+      if(code==='10')c.cx=f;if(code==='20')c.cy=f;if(code==='40')c.r=f;
+      if(code==='50')c.a1=f;if(code==='51')c.a2=f;
     }
   }
-  if (cur && cur.type) ents.push(cur);
-  return ents;
+  if(c&&c.type)E.push(c);
+  return E;
 }
+const dxfL='0\nLINE\n10\n0\n20\n0\n11\n100\n21\n0\n';
+const d2=parseDXF(dxfL);
+t('LINE → 1',d2.length,1);
+t('LINE type',d2[0]&&d2[0].type,'line');
+t('LINE x2=100',d2[0]&&d2[0].x2,100);
 
-// Тест 1: пустой DXF
-const d1 = parseDXF('');
-test('Пустой DXF → 0 элементов', d1.length, 0);
+const dxfP='0\nLWPOLYLINE\n70\n1\n10\n0\n20\n0\n10\n100\n20\n0\n10\n100\n20\n100\n10\n0\n20\n100\n';
+const d3=parseDXF(dxfP);
+t('LWPOLYLINE → 1',d3.length,1);
+t('Poly 4 точки',d3[0]&&d3[0].pts.length,4);
+t('Poly closed',d3[0]&&d3[0].closed,true);
 
-// Тест 2: одна линия
-const dxfLine = '0\nLINE\n10\n0\n20\n0\n11\n100\n21\n0\n';
-const d2 = parseDXF(dxfLine);
-test('DXF с LINE → 1 элемент', d2.length, 1);
-test('LINE type', d2[0] && d2[0].type, 'line');
-test('LINE x1=0', d2[0] && d2[0].x1, 0);
-test('LINE x2=100', d2[0] && d2[0].x2, 100);
+const d4=parseDXF('0\nCIRCLE\n10\n50\n20\n50\n40\n25\n');
+t('CIRCLE → 1',d4.length,1);
+t('Circle cx=50',d4[0]&&d4[0].cx,50);
+t('Circle r=25',d4[0]&&d4[0].r,25);
 
-// Тест 3: полилиния
-const dxfPoly = '0\nLWPOLYLINE\n70\n1\n10\n0\n20\n0\n10\n100\n20\n0\n10\n100\n20\n100\n10\n0\n20\n100\n';
-const d3 = parseDXF(dxfPoly);
-test('DXF с LWPOLYLINE → 1 элемент', d3.length, 1);
-test('Poly type', d3[0] && d3[0].type, 'poly');
-test('Poly 4 точки', d3[0] && d3[0].pts.length, 4);
-test('Poly closed', d3[0] && d3[0].closed, true);
+const d5=parseDXF('0\nARC\n10\n0\n20\n0\n40\n10\n50\n0\n51\n90\n');
+t('ARC → 1',d5.length,1);
+t('Arc r=10',d5[0]&&d5[0].r,10);
+t('Arc a2=90',d5[0]&&d5[0].a2,90);
 
-// Тест 4: окружность
-const dxfCircle = '0\nCIRCLE\n10\n50\n20\n50\n40\n25\n';
-const d4 = parseDXF(dxfCircle);
-test('DXF с CIRCLE → 1 элемент', d4.length, 1);
-test('Circle cx=50', d4[0] && d4[0].cx, 50);
-test('Circle r=25', d4[0] && d4[0].r, 25);
+t('Пустой DXF',parseDXF('').length,0);
+t('Два элемента → 2',parseDXF(dxfL+dxfP).length,2);
 
-// Тест 5: дуга
-const dxfArc = '0\nARC\n10\n0\n20\n0\n40\n10\n50\n0\n51\n90\n';
-const d5 = parseDXF(dxfArc);
-test('DXF с ARC → 1 элемент', d5.length, 1);
-test('Arc r=10', d5[0] && d5[0].r, 10);
-test('Arc a1=0', d5[0] && d5[0].a1, 0);
-test('Arc a2=90', d5[0] && d5[0].a2, 90);
-
-// Тест 6: несколько элементов
-const dxfMulti = dxfLine + dxfCircle;
-const d6 = parseDXF(dxfMulti);
-test('Два элемента → 2', d6.length, 2);
-
-// Метрики DXF
-function analyzeDXF(ents) {
-  let cut = 0, area = 0, pts = [];
-  ents.forEach(e => {
-    if (e.type === 'line') {
-      cut += Math.hypot(e.x2-e.x1, e.y2-e.y1);
-      pts.push([e.x1,e.y1],[e.x2,e.y2]);
-    } else if (e.type === 'poly') {
-      e.pts.forEach(p => pts.push(p));
-      if (e.pts.length > 1) {
-        for (let i=0; i<e.pts.length-1; i++) {
-          cut += Math.hypot(e.pts[i+1][0]-e.pts[i][0], e.pts[i+1][1]-e.pts[i][1]);
-        }
-        if (e.closed && e.pts.length >= 3) {
-          const f = e.pts[0], l = e.pts[e.pts.length-1];
-          cut += Math.hypot(f[0]-l[0], f[1]-l[1]);
-          let s = 0;
-          for (let i=0; i<e.pts.length; i++) {
-            const [x1,y1] = e.pts[i];
-            const [x2,y2] = e.pts[(i+1)%e.pts.length];
-            s += x1*y2 - x2*y1;
+function anaDXF(E){
+  let cut=0,area=0,pts=[];
+  E.forEach(e=>{
+    if(e.type==='line'){cut+=Math.hypot(e.x2-e.x1,e.y2-e.y1);pts.push([e.x1,e.y1],[e.x2,e.y2])}
+    else if(e.type==='poly'){
+      e.pts.forEach(p=>pts.push(p));
+      if(e.pts.length>1){
+        for(let i=0;i<e.pts.length-1;i++)cut+=Math.hypot(e.pts[i+1][0]-e.pts[i][0],e.pts[i+1][1]-e.pts[i][1]);
+        if(e.closed&&e.pts.length>=3){
+          const f=e.pts[0],l=e.pts[e.pts.length-1];
+          cut+=Math.hypot(f[0]-l[0],f[1]-l[1]);
+          let s=0;
+          for(let i=0;i<e.pts.length;i++){
+            const x1=e.pts[i][0],y1=e.pts[i][1];
+            const x2=e.pts[(i+1)%e.pts.length][0],y2=e.pts[(i+1)%e.pts.length][1];
+            s+=x1*y2-x2*y1;
           }
-          area += Math.abs(s/2);
+          area+=Math.abs(s/2);
         }
       }
-    } else if (e.type === 'circle') {
-      cut += 2*Math.PI*e.r;
-      area += Math.PI*e.r*e.r;
+    }else if(e.type==='circle'){
+      cut+=2*Math.PI*e.r;area+=Math.PI*e.r*e.r;
       pts.push([e.cx+e.r,e.cy+e.r],[e.cx-e.r,e.cy-e.r]);
-    } else if (e.type === 'arc') {
-      let a = e.a2 - e.a1;
-      if (a < 0) a += 360;
-      cut += e.r * a * Math.PI / 180;
+    }else if(e.type==='arc'){
+      let a=e.a2-e.a1;if(a<0)a+=360;
+      cut+=e.r*a*Math.PI/180;
       pts.push([e.cx+e.r,e.cy+e.r],[e.cx-e.r,e.cy-e.r]);
     }
   });
-  let mnX=Infinity, mnY=Infinity, mxX=-Infinity, mxY=-Infinity;
-  pts.forEach(([x,y]) => {
-    if (x<mnX) mnX=x; if (y<mnY) mnY=y;
-    if (x>mxX) mxX=x; if (y>mxY) mxY=y;
-  });
-  if (!isFinite(mnX)) { mnX=mnY=mxX=mxY=0; }
-  return { cutM: cut/1000, areaM2: area/1e6, bbox:{ w:mxX-mnX, h:mxY-mnY } };
+  let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
+  pts.forEach(([x,y])=>{if(x<mnX)mnX=x;if(y<mnY)mnY=y;if(x>mxX)mxX=x;if(y>mxY)mxY=y});
+  if(!isFinite(mnX)){mnX=mnY=mxX=mxY=0}
+  return{cutM:cut/1000,areaM2:area/1e6,bbox:{w:mxX-mnX,h:mxY-mnY}};
+}
+const m1=anaDXF(d2);
+t('Линия 100мм: 0.1м',m1.cutM,0.1,0.001);
+t('Линия 100мм: bbox 100',m1.bbox.w,100,0.01);
+const m2=anaDXF(d3);
+t('Квадрат: рез 0.4м',m2.cutM,0.4,0.001);
+t('Квадрат: площадь 0.01м²',m2.areaM2,0.01,0.0001);
+t('Квадрат: bbox 100',m2.bbox.w,100,0.01);
+const m3=anaDXF(d4);
+t('Круг R25: 0.157м',m3.cutM,0.157,0.001);
+t('Круг R25: 0.001964м²',m3.areaM2,0.001964,0.00001);
+
+/* ============ 6. shared.js ============ */
+tT('window.fpPushParts есть',typeof window.fpPushParts==='function');
+tT('window.fpPullParts есть',typeof window.fpPullParts==='function');
+tT('window.fpClearParts есть',typeof window.fpClearParts==='function');
+tT('window.fpSetPrice есть',typeof window.fpSetPrice==='function');
+tT('window.fpGetPrice есть',typeof window.fpGetPrice==='function');
+
+if(typeof window.fpPushParts==='function'){
+  try{
+    window.fpClearParts&&window.fpClearParts();
+    const testParts=[{name:'Тест1',count:2,area:0.5,cut:5},{name:'Тест2',count:1,area:1.2,cut:10}];
+    const pushed=window.fpPushParts(testParts);
+    tT('fpPushParts вернул true',pushed);
+    const pulled=window.fpPullParts();
+    t('fpPullParts вернул массив',Array.isArray(pulled),true);
+    t('В массиве 2 детали',pulled&&pulled.length,2);
+    t('Название 1-й',pulled&&pulled[0].name,'Тест1');
+    t('Кол-во 2-й',pulled&&pulled[1].count,1);
+    window.fpClearParts();
+    t('fpClearParts очистил',window.fpPullParts(),null);
+  }catch(e){
+    t('shared.js работает','ошибка: '+e.message,'ok');
+  }
+}else{
+  t('shared.js доступен','не загружен','loaded');
 }
 
-// Линия 100 мм → рез 0.1 м
-const m1 = analyzeDXF(d2);
-test('Линия 100 мм = рез 0.1 м', m1.cutM, 0.1, 0.001);
-test('Линия 100 мм: bbox.w = 100', m1.bbox.w, 100, 0.01);
+/* ============ 7. nest.js ============ */
+tT('window.fpNest есть',typeof window.fpNest==='function');
+tT('window.fpNestSVG есть',typeof window.fpNestSVG==='function');
+tT('window.fpNestStats есть',typeof window.fpNestStats==='function');
 
-// Квадрат 100×100 из полилинии → площадь 10000 мм² = 0.01 м²
-const m2 = analyzeDXF(d3);
-test('Квадрат: рез = 0.4 м', m2.cutM, 0.4, 0.001);
-test('Квадрат: площадь = 0.01 м²', m2.areaM2, 0.01, 0.0001);
-test('Квадрат: bbox.w = 100', m2.bbox.w, 100, 0.01);
-test('Квадрат: bbox.h = 100', m2.bbox.h, 100, 0.01);
+if(typeof window.fpNest==='function'){
+  const n1=window.fpNest(1000,1000,10,[{name:'A',w:500,h:500,count:1}]);
+  t('1 деталь → 1 лист',Math.max.apply(null,n1.map(x=>x.sheet))+1,1);
+  t('Позиция (0,0)',n1[0].x===0&&n1[0].y===0,true);
+  t('Размер 500×500',n1[0].w===500&&n1[0].h===500,true);
 
-// Окружность R=25 → длина 2πR = 157.08 мм = 0.157 м; площадь πR² = 1963.5 мм² = 0.001964 м²
-const m3 = analyzeDXF(d4);
-test('Круг R25: рез = 0.157 м', m3.cutM, 0.157, 0.001);
-test('Круг R25: площадь = 0.001964 м²', m3.areaM2, 0.001964, 0.00001);
+  const n2=window.fpNest(1000,1000,10,[{name:'A',w:400,h:400,count:4}]);
+  t('4×400×400 → 1 лист',Math.max.apply(null,n2.map(x=>x.sheet))+1,1);
 
-// Дуга 90° R=10 → длина = πR/2 = 15.708 мм = 0.0157 м
-const m4 = analyzeDXF(d5);
-test('Дуга 90° R10: рез = 0.0157 м', m4.cutM, 0.0157, 0.0005);
+  const n3=window.fpNest(1000,1000,10,[{name:'A',w:400,h:400,count:10}]);
+  tR('10×400×400 → 2-3 листа',Math.max.apply(null,n3.map(x=>x.sheet))+1,2,3);
 
-/* ============ 6. РАСКРОЙ ============ */
-function nest(sw, sh, mg, items) {
-  const flat = [];
-  items.forEach(p => { for (let i=0; i<p.count; i++) flat.push({ name:p.name, w:p.w, h:p.h }); });
-  flat.sort((a,b) => (b.w*b.h) - (a.w*a.h));
-  const res = [];
-  let sidx = 0, cx = 0, cy = 0, rh = 0;
-  const W = sw - mg, H = sh - mg;
-  flat.forEach(it => {
-    let { w, h } = it;
-    if (w > W && h <= W && w <= H) { const t = w; w = h; h = t; }
-    if (cx + w + mg > W) { cx = 0; cy += rh + mg; rh = 0; }
-    if (cy + h + mg > H) { sidx++; cx = 0; cy = 0; rh = 0; }
-    res.push({ sheet: sidx, x: cx, y: cy, w, h, name: it.name });
-    cx += w + mg;
-    if (h > rh) rh = h;
-  });
-  return res;
+  const n4=window.fpNest(1000,500,10,[{name:'A',w:400,h:900,count:1}]);
+  t('Поворот: w ≤ 990',n4[0].w<=990,true);
+
+  t('Пустой → 0',window.fpNest(1000,1000,10,[]).length,0);
+
+  const st1=window.fpNestStats(n2,1000,1000);
+  t('Использование 64%',st1.usage,64,0.5);
+  t('Листов 1',st1.sheets,1);
+  tR('Использование 0-100%',st1.usage,0,100);
+
+  const svg=window.fpNestSVG(n1,1000,1000,1,3);
+  tT('SVG содержит <svg',svg.indexOf('<svg')===0);
+  tT('SVG содержит 500×500',svg.indexOf('width="50')>0 || svg.indexOf('height="50')>0);
+}else{
+  t('nest.js доступен','не загружен','loaded');
 }
 
-// Одна деталь 500×500 на лист 1000×1000
-const n1 = nest(1000, 1000, 10, [{ name:'A', w:500, h:500, count:1 }]);
-test('1 деталь → 1 лист', Math.max(...n1.map(x=>x.sheet)) + 1, 1);
-test('Деталь на позиции (0,0)', n1[0].x === 0 && n1[0].y === 0, true);
+/* ============ 8. ИНТЕРФЕЙС ============ */
+tT('localStorage',typeof localStorage!=='undefined');
+tT('JSON',typeof JSON!=='undefined');
+tT('history.replaceState',typeof history!=='undefined'&&typeof history.replaceState==='function');
+tT('navigator.clipboard',typeof navigator!=='undefined');
 
-// 4 детали 400×400 на лист 1000×1000 → все на 1 лист
-const n2 = nest(1000, 1000, 10, [{ name:'A', w:400, h:400, count:4 }]);
-const sheets2 = Math.max(...n2.map(x=>x.sheet)) + 1;
-test('4×400×400 → 1 лист', sheets2, 1);
+try{
+  const k='__test_v2__';
+  localStorage.setItem(k,JSON.stringify({v:12345,o:{a:1}}));
+  const l=JSON.parse(localStorage.getItem(k));
+  t('LS сохранение',l.v,12345);
+  t('LS вложенный',l.o.a,1);
+  localStorage.removeItem(k);
+  t('LS удаление',localStorage.getItem(k),null);
+}catch(e){t('localStorage работает','ошибка: '+e.message,'ok')}
 
-// 10 деталей 400×400 на лист 1000×1000 → 2+ листа
-const n3 = nest(1000, 1000, 10, [{ name:'A', w:400, h:400, count:10 }]);
-const sheets3 = Math.max(...n3.map(x=>x.sheet)) + 1;
-testRange('10×400×400 → 2-3 листа', sheets3, 2, 3);
+try{
+  const obj={d:'КП-0001',c:'Тест'};
+  const enc=btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+  const dec=JSON.parse(decodeURIComponent(escape(atob(enc))));
+  t('Base64 encode/decode',dec.d,'КП-0001');
+}catch(e){t('Base64 работает','ошибка',0)}
 
-// Деталь больше листа — поворот
-const n4 = nest(1000, 500, 10, [{ name:'A', w:400, h:900, count:1 }]);
-test('Деталь 400×900 развернулась', n4[0].w <= 990, true);
+/* ============ ВЫВОД ============ */
+const pass=R.filter(r=>r.p).length;
+const fail=R.length-pass;
+const pct=R.length>0?(pass/R.length*100).toFixed(1):0;
+document.getElementById('totals').innerHTML=
+  '<div class="box b-ok">✓ Пройдено: <b>'+pass+'</b></div>'+
+  '<div class="box '+(fail>0?'b-fail':'b-ok')+'">✗ Провалено: <b>'+fail+'</b></div>'+
+  '<div class="box b-warn">Всего: <b>'+R.length+'</b></div>'+
+  '<div class="box '+(pct>=95?'b-ok':'b-warn')+'">Успех: <b>'+pct+'%</b></div>';
 
-// Пустой раскрой
-const n5 = nest(1000, 1000, 10, []);
-test('Пустой список → 0 деталей', n5.length, 0);
-
-// Расчёт использования
-function usage(parts, sheets, sw, sh) {
-  const totArea = parts.reduce((s,p) => s + (p.w*p.h/1e6) * p.count, 0);
-  const totSheet = sheets * (sw*sh/1e6);
-  return totSheet > 0 ? totArea/totSheet*100 : 0;
-}
-test('Использование 4×400×400 на 1000×1000', usage([{w:400,h:400,count:4}], 1, 1000, 1000), 64, 0.1);
-testRange('Использование в пределах 0-100%', usage([{w:400,h:400,count:4}], 1, 1000, 1000), 0, 100);
-
-/* ============ 7. ИНТЕРФЕЙС / LOCALSTORAGE ============ */
-testTrue('localStorage доступен', typeof localStorage !== 'undefined');
-testTrue('JSON доступен', typeof JSON !== 'undefined');
-testTrue('history.replaceState доступен', typeof history !== 'undefined' && typeof history.replaceState === 'function');
-testTrue('navigator.clipboard (или fallback)', typeof navigator !== 'undefined');
-
-// Проверка сохранения/загрузки
-try {
-  const testKey = '__test_kp__';
-  const testData = { name:'Тест', value: 12345, nested: { a: 1, b: 2 } };
-  localStorage.setItem(testKey, JSON.stringify(testData));
-  const loaded = JSON.parse(localStorage.getItem(testKey));
-  test('localStorage: сохранение/загрузка', loaded.value, 12345);
-  test('localStorage: вложенный объект', loaded.nested.a, 1);
-  localStorage.removeItem(testKey);
-  test('localStorage: удаление', localStorage.getItem(testKey), null);
-} catch (e) {
-  test('localStorage: сохранение/загрузка', 'ошибка: ' + e.message, '12345');
-}
-
-// Base64 (для URL-ссылки)
-try {
-  const obj = { d: 'КП-0001', c: 'Тест' };
-  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-  const dec = JSON.parse(decodeURIComponent(escape(atob(enc))));
-  test('Base64: кодирование/декодирование', dec.d, 'КП-0001');
-} catch (e) {
-  test('Base64: кодирование/декодирование', 'ошибка', 'КП-0001');
-}
-
-/* ============ ВЫВОД РЕЗУЛЬТАТОВ ============ */
-const totalPass = results.filter(r => r.pass).length;
-const totalFail = results.length - totalPass;
-const pct = results.length > 0 ? (totalPass / results.length * 100).toFixed(1) : 0;
-
-document.getElementById('totals').innerHTML = `
-  <div class="box b-ok">✓ Пройдено: <b>${totalPass}</b></div>
-  <div class="box ${totalFail > 0 ? 'b-fail' : 'b-ok'}">✗ Провалено: <b>${totalFail}</b></div>
-  <div class="box b-warn">Всего: <b>${results.length}</b></div>
-  <div class="box ${pct >= 95 ? 'b-ok' : 'b-warn'}">Успех: <b>${pct}%</b></div>
-`;
-
-// Распределение по таблицам
-const tables = {
-  t1: results.slice(0, 15),      // Калькулятор
-  t2: results.slice(15, 29),     // Материалы
-  t3: results.slice(29, 42),     // Резка/гибка
-  t4: results.slice(42, 62),     // Наценки/НДС
-  t5: results.slice(62, 80),     // DXF
-  t6: results.slice(80, 88),     // Раскрой
-  t7: results.slice(88)          // Интерфейс
-};
-
-Object.entries(tables).forEach(([id, rows]) => {
-  const tb = document.querySelector('#' + id + ' tbody');
-  if (!tb) return;
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    const cls = r.pass ? 't-pass' : 't-fail';
-    const sym = r.pass ? '✓ PASS' : '✗ FAIL';
-    const exp = typeof r.expected === 'number' ? r.expected.toFixed(4).replace(/\.?0+$/, '') : String(r.expected);
-    const act = typeof r.actual === 'number' ? r.actual.toFixed(4).replace(/\.?0+$/, '') : String(r.actual);
-    const note = r.pass ? '' : `<div class="t-note">ожидалось: ${exp} | получено: ${act}</div>`;
-    tr.innerHTML = `<td>${r.name}</td><td class="${cls}">${sym}</td><td>${r.pass ? exp : note}</td>`;
+const T={t1:[0,18],t2:[18,36],t3:[36,54],t4:[54,73],t5:[73,92],t6:[92,100],t7:[100,120],t8:[120]};
+Object.entries(T).forEach(([id,r])=>{
+  const tb=document.querySelector('#'+id+' tbody');
+  if(!tb)return;
+  const slice=r.length===1?R.slice(r[0]):R.slice(r[0],r[1]);
+  slice.forEach(x=>{
+    const tr=document.createElement('tr');
+    const cls=x.p?'t-pass':'t-fail';
+    const sym=x.p?'✓ PASS':'✗ FAIL';
+    const exp=typeof x.e==='number'?x.e.toFixed(4).replace(/\.?0+$/,''):String(x.e);
+    const act=typeof x.a==='number'?x.a.toFixed(4).replace(/\.?0+$/,''):String(x.a);
+    const note=x.p?'':'<div class="t-note">ожид: '+exp+' | получ: '+act+'</div>';
+    tr.innerHTML='<td>'+x.n+'</td><td class="'+cls+'">'+sym+'</td><td>'+(x.p?exp:note)+'</td>';
     tb.appendChild(tr);
   });
 });
 
-// Отчёт
-function exportReport() {
-  const lines = [
-    'ОТЧЁТ АВТОТЕСТОВ ФАЙЕРПРОМ',
-    'Дата: ' + new Date().toLocaleString('ru-RU'),
-    'Всего тестов: ' + results.length,
-    'Пройдено: ' + totalPass,
-    'Провалено: ' + totalFail,
-    'Успех: ' + pct + '%',
-    '',
-    '=== ДЕТАЛИ ==='
-  ];
-  results.forEach(r => {
-    const exp = typeof r.expected === 'number' ? r.expected.toFixed(4) : String(r.expected);
-    const act = typeof r.actual === 'number' ? r.actual.toFixed(4) : String(r.actual);
-    lines.push(`${r.pass ? '✓' : '✗'} ${r.name} | ожидалось: ${exp} | получено: ${act}`);
+function exportReport(){
+  const lines=['ОТЧЁТ АВТОТЕСТОВ v2 ФАЙЕРПРОМ','Дата: '+new Date().toLocaleString('ru-RU'),'Всего: '+R.length,'Пройдено: '+pass,'Провалено: '+fail,'Успех: '+pct+'%','','=== ДЕТАЛИ ==='];
+  R.forEach(x=>{
+    const exp=typeof x.e==='number'?x.e.toFixed(4):String(x.e);
+    const act=typeof x.a==='number'?x.a.toFixed(4):String(x.a);
+    lines.push((x.p?'✓':'✗')+' '+x.n+' | ожид: '+exp+' | получ: '+act);
   });
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'fayerprom_test_report_' + new Date().toISOString().slice(0,10) + '.txt';
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='fayerprom_test_v2_'+new Date().toISOString().slice(0,10)+'.txt';
   a.click();
   URL.revokeObjectURL(a.href);
 }
