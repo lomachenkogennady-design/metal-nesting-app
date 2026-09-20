@@ -1,377 +1,119 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metal Nesting App - Оптимизация раскроя металла</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем библиотеку для чтения DXF в браузере -->
-    <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            bg: '#11111b',
-                            card: '#181825',
-                            border: '#313244',
-                            text: '#cdd6f4',
-                            accent: '#89b4fa',
-                            green: '#a6e3a1',
-                            red: '#f38ba8'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Калькулятор раскроя и стоимости металла — ФАЙЕРПРОМ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @media print {
-            body { background: white !important; color: black !important; }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            .bg-dark-card, .bg-dark-bg { background: white !important; border-color: #ccc !important; color: black !important; box-shadow: none !important; }
-            text, h1, h2, h3, p, span { color: black !important; }
-        }
-        .print-only { display: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #f4f6f9; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { font-size: 24px; margin-bottom: 20px; color: #1a202c; text-align: center; }
+        .section { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .section h2 { font-size: 16px; margin-bottom: 12px; color: #4a5568; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 5px; color: #4a5568; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; background: #fff; }
+        .row { display: flex; gap: 15px; }
+        .row .form-group { flex: 1; }
+        button { background: #3182ce; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: 600; border-radius: 6px; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #2b6cb0; }
+        .results { margin-top: 25px; background: #ebf8ff; border: 1px solid #bee3f8; padding: 20px; border-radius: 8px; }
+        .results h3 { font-size: 18px; margin-bottom: 10px; color: #2b6cb0; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .result-item span:last-child { font-weight: 600; color: #2d3748; }
     </style>
 </head>
-<body class="bg-dark-bg text-dark-text min-h-screen p-4 font-sans">
-    <div class="max-w-4xl mx-auto space-y-6">
-        
-        <!-- Шапка -->
-        <header class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4 no-print">
-            <div>
-                <h1 class="text-2xl font-bold text-dark-accent">🧮 Metal Nesting Client</h1>
-                <p class="text-sm text-gray-400">Автономный калькулятор раскроя (работает в браузере)</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <label class="cursor-pointer bg-dark-accent text-dark-bg px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
-                    📁 Импорт DXF
-                    <input type="file" id="dxfFile" accept=".dxf" class="hidden" onchange="handleDxfUpload(this)">
-                </label>
-                <button onclick="exportDxfResult()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-green-500 transition">
-                    💾 Скачать DXF
-                </button>
-                <button onclick="window.print()" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-500 transition">
-                    🖨️ Печать / PDF
-                </button>
-            </div>
-        </header>
+<body>
 
-        <!-- Заголовок для печати -->
-        <div class="print-only mb-6">
-            <h1 class="text-2xl font-bold">Производственный отчет по раскрою металла</h1>
-            <p class="text-sm text-gray-600">Дата: <span id="printDate"></span></p>
+<div class="container">
+    <h1>Калькулятор раскроя и стоимости металла</h1>
+
+    <div class="section">
+        <h2>1. Выбор материала и параметров</h2>
+        <div class="form-group">
+            <label for="material">Марка металла:</label>
+            <select id="material">
+                <option value="galvanized">Оцинкованная сталь (ОЦ)</option>
+                <option value="coldRolled">Холоднокатаная сталь (ХК)</option>
+                <option value="stainless">Нержавеющая сталь (AISI 304)</option>
+                <option value="hotRolled">Горячекатаная сталь (ГК)</option>
+            </select>
         </div>
 
-        <!-- Настройки листа и цены -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 no-print">
-            <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
-                <h2 class="text-lg font-semibold text-dark-accent">Параметры листа</h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs text-gray-400">Ширина (мм)</label>
-                        <input type="number" id="sheetW" value="2500" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400">Высота (мм)</label>
-                        <input type="number" id="sheetH" value="1250" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
-                    </div>
-                </div>
+        <div class="row">
+            <div class="form-group">
+                <label for="thickness">Толщина (мм, от 0.5 до 5.0):</label>
+                <input type="number" id="thickness" min="0.5" max="5.0" step="0.1" value="1.5">
             </div>
-
-            <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
-                <h2 class="text-lg font-semibold text-dark-accent">Ценообразование</h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs text-gray-400">Цена за лист (руб)</label>
-                        <input type="number" id="priceSheet" value="5000" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400">Цена 1м реза (руб)</label>
-                        <input type="number" id="priceMeter" value="50" class="w-full bg-dark-bg border border-dark-border p-2 rounded-lg text-white">
-                    </div>
-                </div>
+            <div class="form-group">
+                <label>Стандартный лист (мм):</label>
+                <input type="text" value="2500 × 1250" disabled style="background: #edf2f7; color: #718096;">
             </div>
         </div>
-
-        <!-- Таблица деталей -->
-        <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-4 no-print">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-dark-accent">Спецификация деталей</h2>
-                <button onclick="addPartRow()" class="bg-dark-border text-white px-3 py-1.5 rounded-lg text-sm hover:bg-opacity-80 transition">+ Добавить деталь</button>
-            </div>
-            
-            <div id="partsList" class="space-y-2">
-                <div class="grid grid-cols-12 gap-2 items-center part-row">
-                    <input type="text" placeholder="Имя" value="Кронштейн" class="col-span-4 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-id">
-                    <input type="number" placeholder="Ширина" value="400" class="col-span-3 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-w">
-                    <input type="number" placeholder="Высота" value="300" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-h">
-                    <input type="number" placeholder="Кол-во" value="4" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-qty">
-                    <button onclick="this.parentElement.remove()" class="col-span-1 text-red-400 hover:text-red-300 text-center font-bold">×</button>
-                </div>
-            </div>
-
-            <button onclick="runClientNesting()" class="w-full bg-dark-accent text-dark-bg py-3 rounded-xl font-bold text-center hover:opacity-90 transition shadow-lg cursor-pointer">
-                Рассчитать раскрой
-            </button>
-        </div>
-
-        <!-- Контейнер для результатов -->
-        <div id="resultsContainer" class="space-y-6"></div>
-
     </div>
 
-    <script>
-        document.getElementById('printDate').innerText = new Date().toLocaleDateString();
+    <div class="section">
+        <h2>2. Данные раскроя деталей</h2>
+        <div class="row">
+            <div class="form-group">
+                <label for="usedArea">Полезная площадь деталей (м²):</label>
+                <input type="number" id="usedArea" min="0.01" step="0.01" value="1.5">
+            </div>
+            <div class="form-group">
+                <label for="remnantArea">Ликвидный остаток / отход (м²):</label>
+                <input type="number" id="remnantArea" min="0" step="0.01" value="0.5">
+            </div>
+        </div>
+    </div>
 
-        function addPartRow(id = 'Деталь', w = 300, h = 200, qty = 1) {
-            const container = document.getElementById('partsList');
-            const row = document.createElement('div');
-            row.className = 'grid grid-cols-12 gap-2 items-center part-row';
-            row.innerHTML = `
-                <input type="text" placeholder="Имя" value="${id}" class="col-span-4 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-id">
-                <input type="number" placeholder="Ширина" value="${w}" class="col-span-3 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-w">
-                <input type="number" placeholder="Высота" value="${h}" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-h">
-                <input type="number" placeholder="Кол-во" value="${qty}" class="col-span-2 bg-dark-bg border border-dark-border p-2 rounded-lg text-sm text-white part-qty">
-                <button onclick="this.parentElement.remove()" class="col-span-1 text-red-400 hover:text-red-300 text-center font-bold">×</button>
-            `;
-            container.appendChild(row);
-        }
+    <button onclick="calculate()">Рассчитать стоимость</button>
 
-        // Клиентский парсер DXF
-        async function handleDxfUpload(input) {
-            if (!input.files || !input.files[0]) return;
-            const file = input.files[0];
-            const text = await file.text();
+    <div class="results" id="resultsBlock">
+        <h3>Результаты расчёта:</h3>
+        <div class="result-item"><span>Масса чистых деталей:</span> <span id="resWeight">0 кг</span></div>
+        <div class="result-item"><span>Стоимость чистого металла:</span> <span id="resNetCost">0 руб.</span></div>
+        <div class="result-item"><span>Масса ликвидного остатка:</span> <span id="resRemnantWeight">0 кг</span></div>
+        <div class="result-item"><span>Стоимость остатка:</span> <span id="resRemnantCost">0 руб.</span></div>
+        <hr style="margin: 10px 0; border: none; border-top: 1px solid #bee3f8;">
+        <div class="result-item" style="font-size: 17px; color: #2c5282;"><span>Итого к оплате (без НДС):</span> <span id="resTotal">0 руб.</span></div>
+    </div>
+</div>
 
-            try {
-                const parser = new DxfParser();
-                const dxf = parser.parseSync(text);
-                
-                const partsMap = {};
-                if (dxf && dxf.entities) {
-                    dxf.entities.forEach(ent => {
-                        if (ent.type === 'LWPOLYLINE' || ent.type === 'LINE') {
-                            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                            
-                            if (ent.vertices) {
-                                ent.vertices.forEach(v => {
-                                    if (v.x < minX) minX = v.x;
-                                    if (v.y < minY) minY = v.y;
-                                    if (v.x > maxX) maxX = v.x;
-                                    if (v.y > maxY) maxY = v.y;
-                                });
-                            } else if (ent.start && ent.end) {
-                                minX = Math.min(ent.start.x, ent.end.x);
-                                minY = Math.min(ent.start.y, ent.end.y);
-                                maxX = Math.max(ent.start.x, ent.end.x);
-                                maxY = Math.max(ent.start.y, ent.end.y);
-                            }
+<script>
+    const materialsData = {
+        galvanized: { density: 7850, pricePerKg: 74.83 },  //
+        coldRolled: { density: 7850, pricePerKg: 61.27 },  //
+        stainless:  { density: 7900, pricePerKg: 311.47 }, //
+        hotRolled:  { density: 7850, pricePerKg: 65.00 }
+    };
 
-                            const w = Math.round((maxX - minX) * 10) / 10;
-                            const h = Math.round((maxY - minY) * 10) / 10;
+    function calculate() {
+        const matKey = document.getElementById('material').value;
+        const thickness = parseFloat(document.getElementById('thickness').value);
+        const usedArea = parseFloat(document.getElementById('usedArea').value) || 0;
+        const remnantArea = parseFloat(document.getElementById('remnantArea').value) || 0;
+        const mat = materialsData[matKey];
 
-                            if (w > 5 && h > 5) {
-                                const key = `${ent.layer || 'Деталь'}_${w}x${h}`;
-                                if (!partsMap[key]) {
-                                    partsMap[key] = { id: `${ent.layer || 'Деталь'} (${w}x${h})`, width: w, height: h, quantity: 1 };
-                                } else {
-                                    partsMap[key].quantity++;
-                                }
-                            }
-                        }
-                    });
-                }
+        const volumeM3 = usedArea * (thickness / 1000);
+        const weightKg = volumeM3 * mat.density;
+        const netCost = weightKg * mat.pricePerKg;
 
-                const parsedParts = Object.values(partsMap);
-                if (parsedParts.length > 0) {
-                    document.getElementById('partsList').innerHTML = '';
-                    parsedParts.forEach(p => addPartRow(p.id, p.width, p.height, p.quantity));
-                    alert('DXF успешно импортирован в браузере!');
-                } else {
-                    alert('Не удалось найти подходящие контуры в DXF файле');
-                }
-            } catch (e) {
-                alert('Ошибка чтения DXF файла: ' + e.message);
-            }
-        }
+        const remnantVolumeM3 = remnantArea * (thickness / 1000);
+        const remnantWeightKg = remnantVolumeM3 * mat.density;
+        const remnantCost = remnantWeightKg * mat.pricePerKg;
 
-        // Клиентский алгоритм раскроя (LAFF)
-        function runClientNesting() {
-            const sw = parseFloat(document.getElementById('sheetW').value) || 2500;
-            const sh = parseFloat(document.getElementById('sheetH').value) || 1250;
-            const priceSheet = parseFloat(document.getElementById('priceSheet').value) || 5000;
-            const priceMeter = parseFloat(document.getElementById('priceMeter').value) || 50;
-            const gap = 0.8;
+        const totalCost = netCost + remnantCost;
 
-            const parts = [];
-            document.querySelectorAll('.part-row').forEach(row => {
-                const id = row.querySelector('.part-id').value || 'Деталь';
-                const w = parseFloat(row.querySelector('.part-w').value) || 100;
-                const h = parseFloat(row.querySelector('.part-h').value) || 100;
-                const qty = parseInt(row.querySelector('.part-qty').value) || 1;
+        document.getElementById('resWeight').innerText = weightKg.toFixed(2) + ' кг';
+        document.getElementById('resNetCost').innerText = netCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+        document.getElementById('resRemnantWeight').innerText = remnantWeightKg.toFixed(2) + ' кг';
+        document.getElementById('resRemnantCost').innerText = remnantCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+        document.getElementById('resTotal').innerText = totalCost.toLocaleString('ru-RU', {maximumFractionDigits: 2}) + ' руб.';
+    }
 
-                for (let i = 0; i < qty; i++) {
-                    parts.push({
-                        uid: `${id}_${i+1}`,
-                        name: id,
-                        width: w,
-                        height: h,
-                        area: w * h
-                    });
-                }
-            });
-
-            // Сортировка по площади (убывание)
-            parts.sort((a, b) => b.area - a.area);
-
-            const sheets = [];
-            let currentSheetParts = [];
-            let cursorX = gap;
-            let cursorY = gap;
-            let rowHeight = 0;
-            let sheetNum = 1;
-
-            function flushSheet(placed, num) {
-                if (placed.length === 0) return null;
-                let svgParts = '';
-                let totalArea = 0;
-                let cutLen = 0;
-
-                placed.forEach(item => {
-                    totalArea += item.area;
-                    cutLen += (item.width + item.height) * 2 / 1000.0;
-                    svgParts += `
-                        <g transform="translate(${item.x}, ${item.y})">
-                            <rect width="${item.width}" height="${item.height}" fill="#313244" stroke="#89b4fa" stroke-width="2" rx="4"/>
-                            <text x="${item.width/2}" y="${item.height/2}" fill="#cdd6f4" font-size="12" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">${item.name}</text>
-                        </g>
-                    `;
-                });
-
-                const utilization = Math.round((totalArea / (sw * sh)) * 100 * 10) / 10;
-                const svg = `
-                    <svg viewBox="0 0 ${sw} ${sh}" width="100%" height="100%" style="background-color: #11111b; border-radius: 8px;">
-                        <rect width="${sw}" height="${sh}" fill="none" stroke="#313244" stroke-width="4"/>
-                        ${svgParts}
-                    </svg>
-                `;
-
-                return {
-                    sheet_number: num,
-                    utilization_percentage: utilization,
-                    cut_length_meters: Math.round(cutLen * 100) / 100,
-                    svg: svg
-                };
-            }
-
-            parts.forEach(part => {
-                const pw = part.width + gap;
-                const ph = part.height + gap;
-
-                if (cursorX + pw > sw - gap) {
-                    cursorX = gap;
-                    cursorY += rowHeight;
-                    rowHeight = 0;
-                }
-
-                if (cursorY + ph > sh - gap) {
-                    const res = flushSheet(currentSheetParts, sheetNum);
-                    if (res) sheets.push(res);
-                    sheetNum++;
-                    currentSheetParts = [];
-                    cursorX = gap;
-                    cursorY = gap;
-                    rowHeight = 0;
-                }
-
-                currentSheetParts.push({
-                    name: part.name,
-                    width: part.width,
-                    height: part.height,
-                    area: part.area,
-                    x: cursorX,
-                    y: cursorY
-                });
-
-                cursorX += pw;
-                if (ph > rowHeight) rowHeight = ph;
-            });
-
-            const lastRes = flushSheet(currentSheetParts, sheetNum);
-            if (lastRes) sheets.push(lastRes);
-
-            const totalSheets = sheets.length;
-            const totalCutMeters = sheets.reduce((acc, s) => acc + s.cut_length_meters, 0);
-            const metalCost = totalSheets * priceSheet;
-            const cuttingCost = totalCutMeters * priceMeter;
-            const totalCost = metalCost + cuttingCost;
-
-            // Рендер результатов
-            const container = document.getElementById('resultsContainer');
-            let html = `
-                <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-2">
-                    <h2 class="text-xl font-bold text-dark-accent">Итоги расчёта</h2>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                        <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
-                            <p class="text-xs text-gray-400">Листов металла</p>
-                            <p class="text-lg font-bold text-white">${totalSheets}</p>
-                        </div>
-                        <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
-                            <p class="text-xs text-gray-400">Стоимость металла</p>
-                            <p class="text-lg font-bold text-white">${metalCost.toFixed(2)} ₽</p>
-                        </div>
-                        <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
-                            <p class="text-xs text-gray-400">Стоимость резки</p>
-                            <p class="text-lg font-bold text-white">${cuttingCost.toFixed(2)} ₽</p>
-                        </div>
-                        <div class="bg-dark-bg p-3 rounded-lg border border-dark-border">
-                            <p class="text-xs text-gray-400">Общая стоимость</p>
-                            <p class="text-lg font-bold text-dark-green">${totalCost.toFixed(2)} ₽</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            sheets.forEach(sheet => {
-                html += `
-                    <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-lg space-y-3">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-semibold text-white">Лист №${sheet.sheet_number}</h3>
-                            <span class="text-sm px-2.5 py-1 rounded bg-dark-bg border border-dark-border text-dark-green">Заполнение: ${sheet.utilization_percentage}%</span>
-                        </div>
-                        <div class="w-full overflow-x-auto rounded-lg border border-dark-border">
-                            ${sheet.svg}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Простой экспорт в DXF прямо из браузера
-        function exportDxfResult() {
-            const sw = parseFloat(document.getElementById('sheetW').value) || 2500;
-            const sh = parseFloat(document.getElementById('sheetH').value) || 1250;
-            
-            let dxfContent = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
-            dxfContent += `0\nLWPOLYLINE\n8\nSheet\n90\n4\n70\n1\n10\n0.0\n20\n0.0\n10\n${sw}\n20\n0.0\n10\n${sw}\n20\n${sh}\n10\n0.0\n20\n${sh}\n`;
-            dxfContent += "0\nENDSEC\n0\nEOF\n";
-
-            const blob = new Blob([dxfContent], { type: 'application/dxf' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'nesting_client_result.dxf';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        }
-    </script>
+    window.onload = calculate;
+</script>
 </body>
 </html>
