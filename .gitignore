@@ -18,3 +18,13 @@ backend/venv/
 uvicorn.log
 backend/0
 backend/1
+
+# Python
+__pycache__/
+*.pyc
+venv/
+backend/venv/
+*.log
+uvicorn.log
+backend/0
+backend/1
