@@ -28,3 +28,11 @@ backend/venv/
 uvicorn.log
 backend/0
 backend/1
+# Old project files
+app/
+backend/
+client/
+static/
+requirements.txt
+docker-compose.yml
+.devcontainer.json
