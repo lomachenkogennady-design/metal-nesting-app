@@ -30,6 +30,8 @@ th{background:var(--bg);font-size:11px;color:var(--hint)}
 .ok{color:#22543d}
 a.back{display:inline-block;margin-top:14px;color:var(--acc);font-weight:600;text-decoration:none}
 </style>
+<script src="shared.js">function sendToKP(){if(!parts.length){document.getElementById("sendMsg").textContent="Сначала добавьте детали";return}if(window.fpPushParts){window.fpPushParts(parts);document.getElementById("sendMsg").innerHTML="<b>OK</b> Отправлено " + parts.length + " поз. Откройте калькулятор";}else{document.getElementById("sendMsg").textContent="Модуль связи не загружен"}}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -61,6 +63,7 @@ a.back{display:inline-block;margin-top:14px;color:var(--acc);font-weight:600;tex
 <table id="partsT"><thead><tr>
 <th>Наим.</th><th>Кол.</th><th>Ш</th><th>В</th><th>Рез м</th><th>Пл. м2</th><th></th>
 </tr></thead><tbody id="partsB"></tbody></table>
+<div style="margin-top:14px;padding:12px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px"><b style="color:#22543d">Связка с КП:</b><br><button onclick="sendToKP()" style="background:#38a169;color:#fff;padding:10px 16px;border:none;border-radius:6px;font-weight:600;margin-top:8px;cursor:pointer">→ Отправить все детали в КП</button> <span id="sendMsg" style="font-size:12px;color:#22543d;margin-left:8px"></span></div>
 <a href="index.html" class="back">К калькулятору КП</a>
 </div>
 <script>
@@ -313,6 +316,7 @@ $('sheetW').value=+arr[0];
 $('sheetH').value=+arr[1];
 }
 });
+function sendToKP(){if(!parts.length){document.getElementById("sendMsg").textContent="Сначала добавьте детали";return}if(window.fpPushParts){window.fpPushParts(parts);document.getElementById("sendMsg").innerHTML="<b>OK</b> Отправлено " + parts.length + " поз. Откройте калькулятор";}else{document.getElementById("sendMsg").textContent="Модуль связи не загружен"}}
 </script>
 </body>
 </html>
