@@ -46,9 +46,9 @@ body{background:#fff;padding:0;color:#000;font-size:11px}
 .po .gg{background:#e6f4ea;font-weight:800}
 }
 </style>
-<script src="shared.js"></script>
 </head>
 <body>
+<script src="shared.js"></script>
 <div class="wrap" id="app">
 <h1 class="brand">🏭 ФАЙЕРПРОМ v2 — Калькулятор КП <span class="badge">MAX</span></h1>
 <button class="gh" onclick="toggleTheme()" style="float:right;margin-top:-38px">🌓</button>
@@ -276,7 +276,6 @@ function showH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');if(!it.leng
 function csv(){const rows=[['Позиция','Наименование','Кол-во','Пл.м²','Толщ.','Рез м','Врез','Гибов','Сумма']];pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s])});rows.push([]);rows.push(['Итого без НДС',$('res').innerText.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)?.[1]||'']);rows.push(['ИТОГО с НДС',$('res').innerText.match(/ИТОГО с НДС[^\d]*([\d\s.,]+)/)?.[1]||'']);const c='\uFEFF'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');dl(new Blob([c],{type:'text/csv;charset=utf-8'}),`КП_${$('dNum').value}.csv`)}
 
 // ЭКСПОРТ EXCEL (упрощённый .xls через HTML)
-function xls(){let h='<table><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Пл.м²</th><th>Толщ.</th><th>Рез м</th><th>Врез</th><th>Гибов</th><th>Сумма</th></tr>';pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;h+=`<tr><td>${i+1}</td><td>${esc(p.n)}</td><td>${p.q}</td><td>${p.a}</td><td>${p.t}</td><td>${p.c}</td><td>${p.p}</td><td>${p.b}</td><td>${s}</td></tr>`});h+='</table>';const blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><script src="shared.js"></script>
 </head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});dl(blob,`КП_${$('dNum').value}.xls`)}
 
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
@@ -321,7 +320,7 @@ function rst(){if(!confirm('Сбросить всё?'))return;localStorage.remov
 
 function loadURL(){try{if(!location.hash||location.hash.length<5)return false;const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));if(s.d)$('dNum').value=s.d;if(s.c)$('kName').value=s.c;if(Array.isArray(s.p)&&s.p.length)pos=s.p;if(s.vat!==undefined)$('vatR').value=String(s.vat);return true}catch(e){return false}}
 
-window.onload=()=>{
+window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&__dxf.length){__dxf.forEach(function(p){pos.push({id:Date.now()+Math.random(),n:p.name||"Из DXF",q:p.count||1,a:p.area||0.5,t:1.5,c:p.cut||5,p:5,b:2})});window.fpClearParts&&window.fpClearParts();}
   const d=new Date();$('dDate').value=today();d.setDate(d.getDate()+14);$('dValid').value=d.toISOString().slice(0,10);$('matDate').value=today();
   pos=[mkP('Деталь 1',1,0.5,1.5,5,5,2)];
   if(!loadURL())loadS();
