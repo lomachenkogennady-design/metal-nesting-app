@@ -72,4 +72,13 @@
     var usage = totSheet > 0 ? (totArea / totSheet * 100) : 0;
     return { sheets: sheets, partArea: totArea, sheetArea: totSheet, usage: usage };
   };
+
+  // Обёртка: SVG → img с data URL (для печати)
+  w.fpNestIMG = function(res, sw, sh, sheets, maxShow) {
+    var svg = w.fpNestSVG(res, sw, sh, sheets, maxShow);
+    // Добавить фиксированные размеры для печати
+    svg = svg.replace('<svg ', '<svg width="600" height="' + Math.min(600, 250*maxShow) + '" ');
+    var encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    return '<img src="' + encoded + '" style="width:100%;max-width:600px;display:block;margin:8px 0" alt="Карта раскроя">';
+  };
 })(window);

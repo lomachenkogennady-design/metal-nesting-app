@@ -366,7 +366,7 @@ function buildP(){
       var items = pos.map(function(p){ return { name: p.n, count: p.q, w: p.w||500, h: p.h||400 }; });
       var res = window.fpNest(2500, 1250, 10, items);
       var st = window.fpNestStats(res, 2500, 1250);
-      wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + window.fpNestSVG(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
+      var mapFn = window.fpNestIMG || window.fpNestSVG;wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + mapFn(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
       po.appendChild(wrap);
     }
   } catch(e){}
