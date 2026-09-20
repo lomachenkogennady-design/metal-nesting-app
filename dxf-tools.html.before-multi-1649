@@ -39,7 +39,7 @@ a.back{display:inline-block;margin-top:14px;color:var(--acc);font-weight:600;tex
 <div class="sub">Лазерная резка до 5 мм · лист 2500×1250 мм · поле 2990×1490</div>
 <button class="gh" onclick="document.body.classList.toggle('dark')" style="float:right;margin-top:-40px">Тема</button>
 <h2>1. Загрузить DXF</h2>
-<input type="file" id="fileIn" accept=".dxf"> <button type="button" onclick="document.getElementById('fileMulti').click()" style="background:#38a169;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;margin-left:6px">📁 Загрузить несколько</button><input type="file" id="fileMulti" accept=".dxf" multiple style="display:none" onchange="handleMulti(event)">
+<input type="file" id="fileIn" accept=".dxf">
 <div id="metrics"></div>
 <canvas id="preview" width="800" height="400"></canvas>
 <button id="addBtn" class="gh" onclick="addToKP()" disabled>В список деталей</button>
@@ -214,55 +214,6 @@ $('addBtn').disabled=false;
 };
 r.readAsText(f);
 });
-function handleMulti(ev){
-  var files = ev.target.files;
-  if(!files || files.length === 0) return;
-  var total = files.length;
-  var loaded = 0;
-  var failed = 0;
-  var queue = Array.prototype.slice.call(files);
-  document.getElementById('metrics').innerHTML = '<div class="metric">Загрузка: <b>0 / ' + total + '</b></div>';
-  function next(){
-    if(queue.length === 0){
-      document.getElementById('metrics').innerHTML = '<div class="metric ok">Загружено: <b>' + loaded + ' из ' + total + '</b></div>' +
-        (failed > 0 ? '<div class="metric warn">Ошибок: ' + failed + '</div>' : '') +
-        '<div style="margin-top:6px;font-size:12px;color:#22543d">Детали добавлены в список. Прокрутите вниз.</div>';
-      renderParts();
-      return;
-    }
-    var file = queue.shift();
-    var reader = new FileReader();
-    reader.onload = function(e){
-      try{
-        var ents = parseDXF(e.target.result);
-        var m = analyze(ents);
-        if(ents.length === 0){
-          failed++;
-        } else {
-          var baseName = file.name.replace(/\.dxf$/i, '');
-          parts.push({
-            id: Date.now() + Math.random(),
-            name: baseName || ('Деталь ' + (parts.length + 1)),
-            w: Math.round(m.bbox.w),
-            h: Math.round(m.bbox.h),
-            count: 1,
-            cut: +m.cutM.toFixed(2),
-            area: +m.areaM2.toFixed(4)
-          });
-          loaded++;
-        }
-      }catch(err){
-        failed++;
-      }
-      document.getElementById('metrics').innerHTML = '<div class="metric">Загрузка: <b>' + (loaded + failed) + ' / ' + total + '</b></div>';
-      next();
-    };
-    reader.onerror = function(){ failed++; next(); };
-    reader.readAsText(file);
-  }
-  next();
-  ev.target.value = '';
-}
 function addToKP(){
 if(!lastDXF)return;
 var nm=prompt('Наименование:',lastDXF.name||'Деталь');
