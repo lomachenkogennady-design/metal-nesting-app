@@ -14,16 +14,7 @@
     var W = sw - margin, H = sh - margin;
     flat.forEach(function(it){
       var w = it.w, h = it.h;
-      // Деталь больше листа (ни в одной ориентации) — помечаем [!]
-      var canFit1 = (w <= W && h <= H);
-      var canFit2 = (h <= W && w <= H);
-      if (!canFit1 && !canFit2) {
-        res.push({ sheet: sidx, x: cx, y: cy, w: Math.min(w, W), h: Math.min(h, H), name: '[!] ' + it.name, oversized: true });
-        sidx++; cx = 0; cy = 0; rh = 0;
-        return;
-      }
-      // Пробуем повернуть, если не влезает в исходной ориентации
-      if (!canFit1 && canFit2) { var t = w; w = h; h = t; }
+      if (w > W && h <= W && w <= H) { var t = w; w = h; h = t; }
       if (cx + w + margin > W) { cx = 0; cy += rh + margin; rh = 0; }
       if (cy + h + margin > H) { sidx++; cx = 0; cy = 0; rh = 0; }
       res.push({ sheet: sidx, x: cx, y: cy, w: w, h: h, name: it.name });
