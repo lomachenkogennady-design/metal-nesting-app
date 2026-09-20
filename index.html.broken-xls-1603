@@ -285,47 +285,14 @@ function showH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');if(!it.leng
 // ЭКСПОРТ CSV
 function csv(){const rows=[['Позиция','Наименование','Кол-во','Пл.м²','Толщ.','Рез м','Врез','Гибов','Сумма']];pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s])});rows.push([]);rows.push(['Итого без НДС',$('res').innerText.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)?.[1]||'']);rows.push(['ИТОГО с НДС',$('res').innerText.match(/ИТОГО с НДС[^\d]*([\d\s.,]+)/)?.[1]||'']);const c='\uFEFF'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');dl(new Blob([c],{type:'text/csv;charset=utf-8'}),`КП_${$('dNum').value}.csv`)}
 
-// ЭКСПОРТ EXCEL
-function xls(){
-  let h='<table border="1"><tr><th>N</th><th>Наименование</th><th>Кол-во</th><th>Площадь</th><th>Толщ</th><th>Рез м</th><th>Врез</th><th>Гибов</th><th>Сумма</th></tr>';
-  pos.forEach(function(p,i){
-    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
-    h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.q+'</td><td>'+p.a+'</td><td>'+p.t+'</td><td>'+p.c+'</td><td>'+p.p+'</td><td>'+p.b+'</td><td>'+s+'</td></tr>';
-  });
-  h+='</table>';
-  var blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});
-  dl(blob,'KP_'+$('dNum').value+'.xls');
-}
+// ЭКСПОРТ EXCEL (упрощённый .xls через HTML)
+</head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});dl(blob,`КП_${$('dNum').value}.xls`)}
 
-// ЭКСПОРТ CSV
-function csv(){
-  var rows=[['Позиция','Наименование','Кол-во','Пл.м2','Толщ','Рез м','Врез','Гибов','Сумма']];
-  pos.forEach(function(p,i){
-    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
-    rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s]);
-  });
-  var csvTxt='\uFEFF'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
-  dl(new Blob([csvTxt],{type:'text/csv;charset=utf-8'}),'KP_'+$('dNum').value+'.csv');
-}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 
-function dl(blob,name){
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+function cpLink(){const url=location.href;if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>alert('🔗 Ссылка скопирована:\n'+url.slice(0,80)+'...'));else prompt('Скопируйте:',url)}
 
-function cpLink(){
-  var url=location.href;
-  if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){alert('Ссылка скопирована: '+url.slice(0,80)+'...')});
-  else prompt('Скопируйте:',url);
-}
-
-function mailTo(){
-  var to='',subj='КП '+$('dNum').value+' от '+$('dDate').value,body='Здравствуйте!\n\nНаправляю КП.\nС уважением';
-  location.href='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
-}
+function mailTo(){const to='',subj=`КП ${$('dNum').value} от ${$('dDate').value}`,body=`Здравствуйте!\n\nНаправляю КП.\nСумма: ${$('res').innerText.match(/ИТОГО[^\d]*([\d\s.,]+)/)?.[1]||'—'} ₽\n\nС уважением`;location.href=`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`}
 
 function toggleTheme(){document.body.classList.toggle('dark')}
 
