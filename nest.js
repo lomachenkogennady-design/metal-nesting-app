@@ -77,11 +77,63 @@
   };
 
   // Обёртка: SVG → img с data URL (для печати)
+
   w.fpNestIMG = function(res, sw, sh, sheets, maxShow) {
-    var svg = w.fpNestSVG(res, sw, sh, sheets, maxShow);
-    // Добавить фиксированные размеры для печати
-    svg = svg.replace('<svg ', '<svg width="600" height="' + Math.min(600, 250*maxShow) + '" ');
-    var encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    return '<img src="' + encoded + '" style="width:100%;max-width:600px;display:block;margin:8px 0" alt="Карта раскроя">';
+    try {
+      maxShow = maxShow || 3;
+      var show = Math.min(sheets, maxShow);
+      var px = 1000;
+      var scale = px / sw;
+      var labelH = 30;
+      var gap = 40;
+      var sheetH = Math.round(sh * scale);
+      var totalH = show * (sheetH + labelH + gap) + gap;
+      var canvas = document.createElement('canvas');
+      canvas.width = px + 40;
+      canvas.height = totalH;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '18px sans-serif';
+      ctx.textBaseline = 'top';
+      var oy = gap;
+      for (var i = 0; i < show; i++) {
+        var ox = 20;
+        ctx.fillStyle = '#333333';
+        ctx.fillText('Лист ' + (i+1) + ' - ' + sw + 'x' + sh + ' мм', ox, oy);
+        var sheetY = oy + labelH;
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(ox, sheetY, px, sheetH);
+        ctx.strokeStyle = '#3182ce';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(ox, sheetY, px, sheetH);
+        res.filter(function(r){ return r.sheet === i; }).forEach(function(r){
+          var x = ox + r.x * scale;
+          var y = sheetY + r.y * scale;
+          var w = r.w * scale;
+          var h = r.h * scale;
+          ctx.fillStyle = 'rgba(49,130,206,0.25)';
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = '#2b6cb0';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x, y, w, h);
+          if (w > 60 && h > 20) {
+            ctx.fillStyle = '#1a202c';
+            ctx.font = '14px sans-serif';
+            ctx.fillText((r.name || '').slice(0, 20), x + 4, y + 4);
+          }
+        });
+        oy += labelH + sheetH + gap;
+      }
+      if (sheets > show) {
+        ctx.fillStyle = '#92400e';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('... ещё ' + (sheets - show) + ' листов', 20, oy);
+      }
+      var dataUrl = canvas.toDataURL('image/png');
+      return '<img src="' + dataUrl + '" style="width:100%;max-width:800px;display:block;margin:8px 0;border:1px solid #ddd">';
+    } catch(e) {
+      return '<div style="padding:10px;background:#fed7d7;color:#822727">Ошибка карты: ' + e.message + '</div>';
+    }
   };
 })(window);

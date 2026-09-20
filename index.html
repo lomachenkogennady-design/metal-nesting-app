@@ -358,7 +358,7 @@ function buildP(){
   h+=`<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:10.5px"><div style="border-top:1px solid #000;width:45%;padding-top:3px">Исполнитель: ${esc($('mName').value||'—')}</div><div style="border-top:1px solid #000;width:45%;padding-top:3px">Заказчик: ${esc($('kName').value||'—')}</div></div>`;
   $('po').innerHTML=h;
   try {
-    if (window.fpNest && window.fpNestSVG && window.fpNestStats && pos.length) {
+    if (window.fpNest && (window.fpNestIMG||window.fpNestSVG) && window.fpNestStats && pos.length) {
       var po = document.getElementById('po');
       var wrap = document.createElement('div');
       wrap.style.pageBreakBefore = 'always';
