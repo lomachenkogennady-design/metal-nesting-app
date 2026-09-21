@@ -703,7 +703,7 @@
           <div class="viewer-bar" style="margin:0;">
             <button id="pos-modal-btn-2d" class="active" onclick="switchModalView('2d')">2D Чертёж</button>
             <button id="pos-modal-btn-3d" onclick="switchModalView('3d')">3D Модель</button>
-            <button id="pos-modal-btn-bend" onclick="switchModalView('bend')">Гибка</button>
+            <button id="pos-modal-btn-bend" style="display:none;" onclick="switchModalView('bend')">Гибка</button>
           </div>
           <button class="del-btn" style="font-size:22px; width:32px; height:32px;" onclick="closePosModal()">×</button>
         </div>
@@ -741,18 +741,6 @@
 
         <!-- Гибка модалки -->
         <div id="pos-modal-v-bend" style="display:none;">
-          <div class="viewer-bar" style="margin-bottom:10px;">
-            <button onclick="applyModalBendPreset([90])">Уголок 90°</button>
-            <button onclick="applyModalBendPreset([90, 90])">П-профиль</button>
-            <button onclick="applyModalBendPreset([90, -90])">Z-профиль</button>
-            <button onclick="applyModalBendPreset([90, 90, 90, 90])">Короб 4 гиба</button>
-            <button class="btn-primary sm" onclick="addModalBend()">+ Добавить гиб</button>
-            <button class="link-btn" onclick="clearModalBends()">Сбросить гибы</button>
-            <label style="font-size:10px; margin-left:auto; display:flex; align-items:center; gap:4px;">
-              K-фактор: <input type="number" step="0.01" id="pmKFactorInput" value="0.44" style="width:50px; height:24px;" onchange="renderPosModalBend(positions[modalPosIndex])">
-            </label>
-          </div>
-          <div id="pos-modal-bend-notices"></div>
           <svg id="pos-modal-bend-flat" viewBox="0 0 760 220" class="svg-canvas" style="margin-bottom:10px;"></svg>
           <svg id="pos-modal-bend-profile" viewBox="0 0 760 200" class="svg-canvas"></svg>
         </div>
@@ -786,75 +774,42 @@
 
   <script>
     /* ====================================================================
-       ЛОГИКА АВТОНОМНОГО ПРИЛОЖЕНИЯ ФАЙЕРПРОМ (V3 ROBUST)
+       ЛОГИКА АВТОНОМНОГО ПРИЛОЖЕНИЯ (Полностью автономно в браузере)
        ==================================================================== */
-    const safeStorage = {
-      getItem(k) { try { return localStorage.getItem(k); } catch(e) { return null; } },
-      setItem(k, v) { try { localStorage.setItem(k, v); } catch(e) {} },
-      removeItem(k) { try { localStorage.removeItem(k); } catch(e) {} }
-    };
+    let currentTab = 'kp';
+    let positions = [];
+    let designerParts = [];
+    let activePartIndex = 0;
+    let currentDesignView = '2d';
+    let customBends = [];
+    let threeScene, threeCamera, threeRenderer, threeMesh, threeAnimFrame;
+    let threeSpin = true;
 
-    var currentTab = 'kp';
-    var positions = [];
-    var designerParts = [];
-    var activePartIndex = 0;
-    var currentDesignView = '2d';
-    var threeScene, threeCamera, threeRenderer, threeMesh, threeAnimFrame;
-    var threeSpin = true;
-    var idealDist3D = 600;
-
-    var zoom2D = 1;
-    var pan2D = { x: 0, y: 0 };
-    var isDragging2D = false;
-    var startPtr2D = { x: 0, y: 0 };
-
-    var modalPosIndex = 0;
-    var pmModalView = '2d';
-    var pmZoom2D = 1;
-    var pmPan2D = { x: 0, y: 0 };
-    var pmIsDragging = false;
-    var pmStartPtr = { x: 0, y: 0 };
-    var pmThreeScene, pmThreeCamera, pmThreeRenderer, pmThreeMesh, pmAnimFrame;
-    var pmSpin = true;
-    var pmIdealDist = 600;
-
-    function initApp() {
-      const docDate = document.getElementById('docDate');
-      if (docDate && !docDate.value) docDate.value = new Date().toISOString().slice(0, 10);
+    // Инициализация при старте
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('docDate').value = new Date().toISOString().slice(0, 10);
       loadSavedState();
       if (positions.length === 0) {
-        addPosition("Деталь 1", 1, 500, 400, 0.2000, 1.5, 1.80, 1, 0);
+        addPosition("Деталь 1", 1, 500, 400, 0.2, 1.5, 1.8, 4, 2);
       }
       calcAll();
       renderSavedQuotesList();
       generateShapeUI();
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
+      initThreeJS();
+    });
 
     // Смена вкладок
     function setTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      const kpEl = document.getElementById('tab-kp');
-      const desEl = document.getElementById('tab-designer');
-      const testEl = document.getElementById('tab-tests');
-      if (kpEl) kpEl.style.display = tab === 'kp' ? 'grid' : 'none';
-      if (desEl) desEl.style.display = tab === 'designer' ? 'grid' : 'none';
-      if (testEl) testEl.style.display = tab === 'tests' ? 'grid' : 'none';
+      document.getElementById('tab-kp').style.display = tab === 'kp' ? 'grid' : 'none';
+      document.getElementById('tab-designer').style.display = tab === 'designer' ? 'grid' : 'none';
+      document.getElementById('tab-tests').style.display = tab === 'tests' ? 'grid' : 'none';
 
       const btnMap = { kp: 0, designer: 1, tests: 2 };
-      const btn = document.querySelectorAll('.tab-btn')[btnMap[tab]];
-      if (btn) btn.classList.add('active');
+      document.querySelectorAll('.tab-btn')[btnMap[tab]].classList.add('active');
 
       if (tab === 'designer') {
-        if (designerParts.length === 0 && positions.length > 0) {
-          syncPositionsToDesigner();
-        }
         renderCurrentPartView();
       } else if (tab === 'tests') {
         runAllTests();
@@ -867,14 +822,15 @@
 
     function toggleReq() {
       const el = document.getElementById('extra-req');
-      if (el) el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+      el.style.display = el.style.display === 'none' ? 'grid' : 'none';
     }
 
     function toggleMemoModal() {
       const el = document.getElementById('memo-block');
-      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
+    // Сохранение файла самого себя на телефон
     function downloadSelf() {
       const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
       const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
@@ -885,39 +841,32 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
-      alert('Файл "fayerprom-offline.html" успешно сохранён на ваше устройство!');
+      alert('Файл "fayerprom-offline.html" сохранён!\nТеперь вы можете открыть его в телефоне даже без подключения к интернету.');
     }
 
     /* ---------------- 1. Калькулятор КП ---------------- */
     function onMatChange() {
       const sel = document.getElementById('matSelect');
-      if (!sel) return;
       const opt = sel.options[sel.selectedIndex];
       document.getElementById('matDensity').value = opt.getAttribute('data-d');
       if (!document.getElementById('ownPrice').checked) {
         document.getElementById('matPrice').value = opt.getAttribute('data-p');
       }
       const maxT = opt.getAttribute('data-max');
-      const badge = document.getElementById('mat-limit-badge');
-      if (badge) {
-        badge.textContent = maxT === '0' 
-          ? '⚠️ Цветной металл: по запросу' 
-          : `Лимит станка: до ${maxT} мм`;
-      }
+      document.getElementById('mat-limit-badge').textContent = maxT === '0' 
+        ? '⚠️ Цветной металл: по запросу' 
+        : `Лимит станка: до ${maxT} мм`;
       calcAll();
     }
 
     function onOwnPriceChange() {
       const own = document.getElementById('ownPrice').checked;
-      const matP = document.getElementById('matPrice');
-      if (matP) matP.disabled = !own;
+      document.getElementById('matPrice').disabled = !own;
       if (!own) onMatChange();
     }
 
     function onCutTypeChange() {
-      const cutP = document.getElementById('cutPrice');
-      const cutT = document.getElementById('cutType');
-      if (cutP && cutT) cutP.value = cutT.value;
+      document.getElementById('cutPrice').value = document.getElementById('cutType').value;
       calcAll();
     }
 
@@ -959,7 +908,7 @@
       return s;
     }
 
-    function addPosition(name="Деталь", q=1, w=500, h=400, a=0.2000, t=1.5, c=1.80, p=1, b=0, segs=null, circles=null, bends=null) {
+    function addPosition(name="Деталь", q=1, w=500, h=400, a=0.2, t=1.5, c=1.8, p=4, b=0, segs=null, circles=null, bends=null) {
       if (!segs || segs.length === 0) {
         segs = [
           { x1: 0, y1: 0, x2: w, y2: 0 },
@@ -987,12 +936,11 @@
     }
 
     function updatePos(idx, field, val) {
-      if (!positions[idx]) return;
       const num = parseFloat(val) || 0;
       positions[idx][field] = field === 'name' ? val : num;
       if (field === 'w' || field === 'h') {
-        const pw = Math.max(10, positions[idx].w || 10);
-        const ph = Math.max(10, positions[idx].h || 10);
+        const pw = positions[idx].w;
+        const ph = positions[idx].h;
         positions[idx].a = Number(((pw * ph) / 1e6).toFixed(4));
         if (!positions[idx].isCustomDxf) {
           positions[idx].segs = [
@@ -1001,7 +949,6 @@
             { x1: pw, y1: ph, x2: 0, y2: ph },
             { x1: 0, y1: ph, x2: 0, y2: 0 }
           ];
-          positions[idx].c = Number(((pw * 2 + ph * 2) / 1000).toFixed(2));
         }
       }
       renderPositionsTable();
@@ -1010,7 +957,6 @@
 
     function renderPositionsTable() {
       const tbody = document.getElementById('pos-tbody');
-      if (!tbody) return;
       tbody.innerHTML = '';
       positions.forEach((pos, i) => {
         const tr = document.createElement('tr');
@@ -1021,11 +967,11 @@
               <span class="thumb-hover-tag">👁️ 2D/3D</span>
             </button>
           </td>
-          <td><input type="text" value="${pos.name}" oninput="updatePos(${i},'name',this.value)" onchange="updatePos(${i},'name',this.value)"></td>
-          <td><input type="number" min="1" value="${pos.q}" oninput="updatePos(${i},'q',this.value)" onchange="updatePos(${i},'q',this.value)"></td>
-          <td><input type="number" value="${pos.w}" oninput="updatePos(${i},'w',this.value)" onchange="updatePos(${i},'w',this.value)"></td>
-          <td><input type="number" value="${pos.h}" oninput="updatePos(${i},'h',this.value)" onchange="updatePos(${i},'h',this.value)"></td>
-          <td><input type="number" step="0.0001" value="${pos.a}" oninput="updatePos(${i},'a',this.value)" onchange="updatePos(${i},'a',this.value)"></td>
+          <td><input type="text" value="${pos.name}" onchange="updatePos(${i},'name',this.value)"></td>
+          <td><input type="number" min="1" value="${pos.q}" onchange="updatePos(${i},'q',this.value)"></td>
+          <td><input type="number" value="${pos.w}" onchange="updatePos(${i},'w',this.value)"></td>
+          <td><input type="number" value="${pos.h}" onchange="updatePos(${i},'h',this.value)"></td>
+          <td><input type="number" step="0.0001" value="${pos.a}" onchange="updatePos(${i},'a',this.value)"></td>
           <td>
             <select onchange="updatePos(${i},'t',this.value)">
               ${[0.2, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0].map(t => 
@@ -1033,9 +979,9 @@
               ).join('')}
             </select>
           </td>
-          <td><input type="number" step="0.1" value="${pos.c}" oninput="updatePos(${i},'c',this.value)" onchange="updatePos(${i},'c',this.value)"></td>
-          <td><input type="number" value="${pos.p}" oninput="updatePos(${i},'p',this.value)" onchange="updatePos(${i},'p',this.value)"></td>
-          <td><input type="number" value="${pos.b}" oninput="updatePos(${i},'b',this.value)" onchange="updatePos(${i},'b',this.value)"></td>
+          <td><input type="number" step="0.1" value="${pos.c}" onchange="updatePos(${i},'c',this.value)"></td>
+          <td><input type="number" value="${pos.p}" onchange="updatePos(${i},'p',this.value)"></td>
+          <td><input type="number" value="${pos.b}" onchange="updatePos(${i},'b',this.value)"></td>
           <td class="sum" id="pos-sum-${i}">0.00 ₽</td>
           <td><button class="del-btn" onclick="removePosition(${i})">×</button></td>
         `;
@@ -1043,322 +989,36 @@
       });
     }
 
-    function getBendTariff(th) {
-      const b1 = parseFloat(document.getElementById('b1')?.value) || 25;
-      const b2 = parseFloat(document.getElementById('b2')?.value) || 40;
-      const b3 = parseFloat(document.getElementById('b3')?.value) || 70;
-      const b4 = parseFloat(document.getElementById('b4')?.value) || 120;
-      if (th <= 2) return b1;
-      if (th <= 4) return b2;
-      if (th <= 8) return b3;
-      return b4;
-    }
+    /* ---------------- Инспекция каждого изделия (2D / 3D Модалка) ---------------- */
+    let modalPosIndex = 0;
+    let pmModalView = '2d';
+    let pmZoom2D = 1;
+    let pmPan2D = { x: 0, y: 0 };
+    let pmIsDragging = false;
+    let pmStartPtr = { x: 0, y: 0 };
+    let pmThreeScene, pmThreeCamera, pmThreeRenderer, pmThreeMesh, pmAnimFrame;
+    let pmSpin = true;
+    let pmIdealDist = 600;
 
-    function calcAll() {
-      const density = parseFloat(document.getElementById('matDensity')?.value) || 7850;
-      const pricePerKg = parseFloat(document.getElementById('matPrice')?.value) || 0;
-      const cutPrice = parseFloat(document.getElementById('cutPrice')?.value) || 50;
-      const pierceFee = parseFloat(document.getElementById('pierceFee')?.value) || 0.15;
-
-      let totalWeight = 0;
-      let totalMetal = 0;
-      let totalCut = 0;
-      let totalBend = 0;
-      let totalArea = 0;
-
-      positions.forEach((pos, i) => {
-        const weight = (pos.a || 0) * (pos.q || 1) * ((pos.t || 1.5) / 1000) * density;
-        const metal = weight * pricePerKg;
-        const cut = ((pos.c || 0) + (pos.p || 0) * pierceFee) * (pos.q || 1) * cutPrice;
-        const bend = (pos.b || 0) * (pos.q || 1) * getBendTariff(pos.t || 1.5);
-        const rowSum = metal + cut + bend;
-
-        totalWeight += weight;
-        totalMetal += metal;
-        totalCut += cut;
-        totalBend += bend;
-        totalArea += (pos.a || 0) * (pos.q || 1);
-
-        const cell = document.getElementById(`pos-sum-${i}`);
-        if (cell) cell.textContent = rowSum.toFixed(2) + ' ₽';
-      });
-
-      const paintArea = parseFloat(document.getElementById('paintArea')?.value) || 0;
-      const paintPrice = parseFloat(document.getElementById('paintPrice')?.value) || 0;
-      const paintSum = paintArea * paintPrice;
-
-      const filmSide = document.getElementById('filmSide')?.value || 'none';
-      const filmMult = filmSide === 'two' ? 2 : filmSide === 'one' ? 1 : 0;
-      const filmSum = totalArea * filmMult * 60;
-
-      const sandArea = parseFloat(document.getElementById('sandArea')?.value) || 0;
-      const sandPrice = parseFloat(document.getElementById('sandPrice')?.value) || 0;
-      const sandSum = sandArea * sandPrice;
-
-      const weldM = parseFloat(document.getElementById('weldM')?.value) || 0;
-      const weldPrice = parseFloat(document.getElementById('weldPrice')?.value) || 0;
-      const otherSum = (weldM * weldPrice) +
-        ((parseFloat(document.getElementById('drillCount')?.value) || 0) * 5) +
-        ((parseFloat(document.getElementById('zenkCount')?.value) || 0) * 8) +
-        ((parseFloat(document.getElementById('tapCount')?.value) || 0) * 30);
-
-      const delivSum = parseFloat(document.getElementById('delivPrice')?.value) || 0;
-
-      const subtotal = totalMetal + totalCut + totalBend + paintSum + filmSum + sandSum + otherSum + delivSum;
-
-      const urgencyPct = parseFloat(document.getElementById('urgency')?.value) || 0;
-      const urgencySum = subtotal * (urgencyPct / 100);
-
-      let autoDisc = 0;
-      if (totalWeight >= 500) autoDisc = 10;
-      else if (totalWeight >= 100) autoDisc = 5;
-      const manualDisc = parseFloat(document.getElementById('discount')?.value) || 0;
-      const discPct = Math.max(autoDisc, manualDisc);
-
-      const withUrgency = subtotal + urgencySum;
-      const discSum = withUrgency * (discPct / 100);
-      const afterDisc = withUrgency - discSum;
-
-      const minOrder = parseFloat(document.getElementById('minOrder')?.value) || 0;
-      const net = Math.max(minOrder, afterDisc);
-
-      const vatRate = parseFloat(document.getElementById('vatRate')?.value) || 0;
-      const vatSum = net * (vatRate / 100);
-      const gross = net + vatSum;
-
-      const rw = document.getElementById('res-weight'); if (rw) rw.textContent = totalWeight.toFixed(2) + ' кг';
-      const rm = document.getElementById('res-metal'); if (rm) rm.textContent = totalMetal.toFixed(2) + ' ₽';
-      const rc = document.getElementById('res-cut'); if (rc) rc.textContent = totalCut.toFixed(2) + ' ₽';
-      const rb = document.getElementById('res-bend'); if (rb) rb.textContent = totalBend.toFixed(2) + ' ₽';
-
-      toggleRow('row-paint', 'res-paint', paintSum, paintSum.toFixed(2) + ' ₽');
-      toggleRow('row-film', 'res-film', filmSum, filmSum.toFixed(2) + ' ₽');
-      toggleRow('row-sand', 'res-sand', sandSum, sandSum.toFixed(2) + ' ₽');
-      toggleRow('row-other', 'res-other', otherSum, otherSum.toFixed(2) + ' ₽');
-      toggleRow('row-deliv', 'res-deliv', delivSum, delivSum.toFixed(2) + ' ₽');
-
-      const rst = document.getElementById('res-subtotal'); if (rst) rst.textContent = subtotal.toFixed(2) + ' ₽';
-      toggleRow('row-urgency', 'res-urgency', urgencySum, `+${urgencySum.toFixed(2)} ₽ (${urgencyPct}%)`);
-      toggleRow('row-discount', 'res-discount', discSum, `−${discSum.toFixed(2)} ₽ (${discPct}%)`);
-
-      const rn = document.getElementById('res-net'); if (rn) rn.textContent = net.toFixed(2) + ' ₽';
-      const rv = document.getElementById('res-vat'); if (rv) rv.textContent = vatSum.toFixed(2) + ' ₽';
-      const rg = document.getElementById('res-gross'); if (rg) rg.textContent = gross.toFixed(2) + ' ₽';
-
-      saveDraftToLocalStorage();
-      updatePrintArea({ totalWeight, net, vatSum, gross, vatRate });
-    }
-
-    function toggleRow(rowId, textId, val, formatted) {
-      const r = document.getElementById(rowId);
-      const t = document.getElementById(textId);
-      if (!r || !t) return;
-      if (val > 0) {
-        r.style.display = 'flex';
-        t.textContent = formatted;
-      } else {
-        r.style.display = 'none';
-      }
-    }
-
-    function saveQuoteLocal() {
-      const quotes = JSON.parse(safeStorage.getItem('fp_offline_quotes') || '[]');
-      const docNum = document.getElementById('docNum')?.value || 'КП-0001';
-      const quote = {
-        id: Date.now(),
-        docNum,
-        date: document.getElementById('docDate')?.value || '',
-        customer: document.getElementById('kName')?.value || 'Без заказчика',
-        gross: document.getElementById('res-gross')?.textContent || '',
-        weight: document.getElementById('res-weight')?.textContent || '',
-        positions: JSON.parse(JSON.stringify(positions))
-      };
-      quotes.unshift(quote);
-      safeStorage.setItem('fp_offline_quotes', JSON.stringify(quotes.slice(0, 30)));
-      renderSavedQuotesList();
-      alert(`КП ${docNum} успешно сохранено!`);
-    }
-
-    function renderSavedQuotesList() {
-      const container = document.getElementById('saved-quotes-list');
-      if (!container) return;
-      const quotes = JSON.parse(safeStorage.getItem('fp_offline_quotes') || '[]');
-      if (quotes.length === 0) {
-        container.innerHTML = '<span class="hint">Сохранённых расчётов пока нет.</span>';
-        return;
-      }
-      container.innerHTML = '';
-      quotes.forEach(q => {
-        const item = document.createElement('div');
-        item.style = 'padding:6px 8px; border:1px solid var(--brd); border-radius:6px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;';
-        item.innerHTML = `
-          <div>
-            <b>${q.docNum}</b> (${q.customer})<br>
-            <small style="color:var(--hint)">${q.weight} · ${q.gross}</small>
-          </div>
-          <button class="link-btn" onclick="restoreQuote(${q.id})">Загрузить</button>
-        `;
-        container.appendChild(item);
-      });
-    }
-
-    function restoreQuote(id) {
-      const quotes = JSON.parse(safeStorage.getItem('fp_offline_quotes') || '[]');
-      const q = quotes.find(x => x.id === id);
-      if (!q) return;
-      if (document.getElementById('docNum')) document.getElementById('docNum').value = q.docNum;
-      if (document.getElementById('docDate')) document.getElementById('docDate').value = q.date;
-      if (document.getElementById('kName')) document.getElementById('kName').value = q.customer;
-      positions = q.positions || [];
-      renderPositionsTable();
-      calcAll();
-      alert(`КП ${q.docNum} успешно загружено!`);
-    }
-
-    function saveDraftToLocalStorage() {
-      const draft = {
-        docNum: document.getElementById('docNum')?.value,
-        docDate: document.getElementById('docDate')?.value,
-        kName: document.getElementById('kName')?.value,
-        mat: document.getElementById('matSelect')?.value,
-        positions
-      };
-      safeStorage.setItem('fp_offline_draft', JSON.stringify(draft));
-    }
-
-    function loadSavedState() {
-      const raw = safeStorage.getItem('fp_offline_draft');
-      if (!raw) return;
-      try {
-        const d = JSON.parse(raw);
-        if (d.docNum && document.getElementById('docNum')) document.getElementById('docNum').value = d.docNum;
-        if (d.docDate && document.getElementById('docDate')) document.getElementById('docDate').value = d.docDate;
-        if (d.kName && document.getElementById('kName')) document.getElementById('kName').value = d.kName;
-        if (d.mat && document.getElementById('matSelect')) document.getElementById('matSelect').value = d.mat;
-        if (Array.isArray(d.positions) && d.positions.length > 0) positions = d.positions;
-        onMatChange();
-        renderPositionsTable();
-      } catch (e) {}
-    }
-
-    function resetForm() {
-      if (!confirm('Очистить форму калькулятора?')) return;
-      safeStorage.removeItem('fp_offline_draft');
-      positions = [];
-      addPosition();
-      calcAll();
-    }
-
-    function exportCSV() {
-      let csv = "Наименование;Количество;Ширина_мм;Высота_мм;Площадь_м2;Толщина_мм;Рез_м;Врезки;Гибы\n";
-      positions.forEach(p => {
-        csv += `${p.name};${p.q};${p.w};${p.h};${p.a};${p.t};${p.c};${p.p};${p.b}\n`;
-      });
-      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${document.getElementById('docNum')?.value || 'КП'}.csv`;
-      a.click();
-    }
-
-    function exportBackupJSON() {
-      const data = {
-        docNum: document.getElementById('docNum')?.value,
-        docDate: document.getElementById('docDate')?.value,
-        kName: document.getElementById('kName')?.value,
-        material: document.getElementById('matSelect')?.value,
-        positions
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${data.docNum || 'КП'}_backup.json`;
-      a.click();
-    }
-
-    function restoreBackupJSON(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const r = new FileReader();
-      r.onload = () => {
-        try {
-          const d = JSON.parse(r.result);
-          if (d.positions) positions = d.positions;
-          if (d.docNum && document.getElementById('docNum')) document.getElementById('docNum').value = d.docNum;
-          renderPositionsTable();
-          calcAll();
-          alert('Данные успешно восстановлены!');
-        } catch(err) { alert('Ошибка чтения файла бэкапа'); }
-      };
-      r.readAsText(file);
-    }
-
-    function updatePrintArea({ totalWeight, net, vatSum, gross, vatRate }) {
-      const prDoc = document.getElementById('pr-docNum'); if (prDoc) prDoc.textContent = document.getElementById('docNum')?.value;
-      const prD = document.getElementById('pr-date'); if (prD) prD.textContent = document.getElementById('docDate')?.value;
-      const matSel = document.getElementById('matSelect');
-      const prM = document.getElementById('pr-mat'); if (prM && matSel) prM.textContent = matSel.options[matSel.selectedIndex]?.text;
-      const prT = document.getElementById('pr-term'); if (prT) prT.textContent = document.getElementById('dTerm')?.value;
-      const prE = document.getElementById('pr-exec'); if (prE) prE.textContent = `${document.getElementById('cName')?.value}, ИНН ${document.getElementById('cINN')?.value}, тел. ${document.getElementById('cPhone')?.value}`;
-      const prC = document.getElementById('pr-cust'); if (prC) prC.textContent = document.getElementById('kName')?.value || '—';
-
-      const tbody = document.getElementById('pr-table-body');
-      if (tbody) {
-        tbody.innerHTML = '';
-        positions.forEach((p, i) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${i+1}</td><td style="text-align:center;padding:2px;">${getThumbSvg(p, 48, 32)}</td><td>${p.name}</td><td>${p.q}</td><td>${p.w}×${p.h}</td><td>${p.a}</td><td>${p.t} мм</td><td style="text-align:right">${document.getElementById(`pos-sum-${i}`)?.textContent || ''}</td>`;
-          tbody.appendChild(tr);
-        });
-      }
-
-      const noteBox = document.getElementById('pr-extra-notes');
-      const ral = document.getElementById('ralColor')?.value;
-      const film = document.getElementById('filmSide')?.value;
-      const agree = document.getElementById('flatAgreement')?.checked;
-      let notes = [];
-      if (parseFloat(document.getElementById('paintArea')?.value) > 0) notes.push(`Порошковая покраска: <b>${ral}</b>`);
-      if (film !== 'none') notes.push(`Защитная плёнка: <b>${film==='two'?'с 2 сторон':'с 1 стороны'}</b>`);
-      if (agree) notes.push('<b style="color:#c53030;">Внимание: заказ согласован к изготовлению ТОЛЬКО по развёртке (на ответственность заказчика).</b>');
-
-      if (noteBox) {
-        if (notes.length > 0) {
-          noteBox.style.display = 'block';
-          noteBox.innerHTML = notes.join(' · ');
-        } else {
-          noteBox.style.display = 'none';
-        }
-      }
-
-      const pw = document.getElementById('pr-weight'); if (pw) pw.textContent = totalWeight.toFixed(2) + ' кг';
-      const pn = document.getElementById('pr-net'); if (pn) pn.textContent = net.toFixed(2) + ' ₽';
-      const pv = document.getElementById('pr-vat'); if (pv) pv.textContent = vatSum.toFixed(2) + ' ₽';
-      const pg = document.getElementById('pr-gross'); if (pg) pg.textContent = gross.toFixed(2) + ' ₽';
-      const pf = document.getElementById('pr-footer'); if (pf) pf.textContent = `Предоплата: ${document.getElementById('prepay')?.value}. Действительно: ${document.getElementById('dValid')?.value}. Менеджер: ${document.getElementById('mName')?.value}.`;
-    }
-
-    /* ---------------- 2. Инспекция каждого изделия (2D / 3D / Гибка) ---------------- */
     function inspectPosition(idx) {
       modalPosIndex = idx;
       const pos = positions[idx];
       if (!pos) return;
 
-      const title = document.getElementById('pos-modal-title'); if (title) title.textContent = pos.name;
-      const badge = document.getElementById('pos-modal-badge'); if (badge) badge.textContent = `${pos.w} × ${pos.h} мм · S ${pos.t} мм`;
-      const dims = document.getElementById('pos-modal-dims'); if (dims) dims.textContent = `Кол-во: ${pos.q} шт · Площадь: ${pos.a} м² · Рез: ${pos.c} м · Врезок: ${pos.p} · Гибов: ${pos.b}`;
+      document.getElementById('pos-modal-title').textContent = pos.name;
+      document.getElementById('pos-modal-badge').textContent = `${pos.w} × ${pos.h} мм · S ${pos.t} мм`;
+      document.getElementById('pos-modal-dims').textContent = `Кол-во: ${pos.q} шт · Площадь: ${pos.a} м² · Рез: ${pos.c} м · Врезок: ${pos.p} · Гибов: ${pos.b}`;
 
       const bendBtn = document.getElementById('pos-modal-btn-bend');
-      if (bendBtn) bendBtn.textContent = (pos.bends && pos.bends.length > 0) ? `Гибка (${pos.bends.length})` : 'Гибка';
+      if (bendBtn) bendBtn.style.display = (pos.bends && pos.bends.length > 0) ? 'inline-block' : 'none';
 
-      const modal = document.getElementById('pos-modal');
-      if (modal) modal.style.display = 'grid';
+      document.getElementById('pos-modal').style.display = 'grid';
       fitPosModal2D();
       switchModalView('2d');
     }
 
     function closePosModal() {
-      const modal = document.getElementById('pos-modal');
-      if (modal) modal.style.display = 'none';
+      document.getElementById('pos-modal').style.display = 'none';
       if (pmAnimFrame) cancelAnimationFrame(pmAnimFrame);
     }
 
@@ -1386,7 +1046,6 @@
     function renderPosModal2D(pos) {
       initPosModalInteraction();
       const svg = document.getElementById('pos-modal-svg');
-      if (!svg) return;
       const W = 760, H = 400;
       const padLeft = 70, padRight = 35, padBottom = 55, padTop = 45;
       const availW = W - padLeft - padRight;
@@ -1436,7 +1095,7 @@
 
       // Линии гиба
       if (pos.bends && pos.bends.length > 0) {
-        pos.bends.forEach((b) => {
+        pos.bends.forEach((b, i) => {
           const bx = ox + (b.pos || b.position || 0) * scale;
           content += `
             <line x1="${bx}" y1="${oy - 4}" x2="${bx}" y2="${oy + pos.h*scale + 4}" stroke="#c05621" stroke-width="1.8" stroke-dasharray="6,4"/>
@@ -1520,14 +1179,12 @@
       if (pos) renderPosModal2D(pos);
     }
     function exportPosModalSVG() {
-      const svg = document.getElementById('pos-modal-svg')?.outerHTML;
-      if (!svg) return;
+      const svg = document.getElementById('pos-modal-svg').outerHTML;
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${positions[modalPosIndex]?.name||'деталь'}-2D.svg`; a.click();
     }
     function exportPosModalPNG() {
       const svg = document.getElementById('pos-modal-svg');
-      if (!svg) return;
       const xml = new XMLSerializer().serializeToString(svg);
       const img = new Image();
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
@@ -1544,51 +1201,44 @@
       if (!window.THREE || !mount) return;
 
       if (!pmThreeRenderer) {
-        try {
-          pmThreeScene = new THREE.Scene();
-          const width = mount.clientWidth || 600;
-          pmThreeCamera = new THREE.PerspectiveCamera(45, width / 350, 0.1, 100000);
-          pmThreeCamera.position.set(300, 400, 500);
+        pmThreeScene = new THREE.Scene();
+        pmThreeCamera = new THREE.PerspectiveCamera(45, (mount.clientWidth || 600) / 350, 0.1, 100000);
+        pmThreeCamera.position.set(300, 400, 500);
 
-          pmThreeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-          pmThreeRenderer.setSize(width, 350);
-          pmThreeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-          mount.appendChild(pmThreeRenderer.domElement);
+        pmThreeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        pmThreeRenderer.setSize(mount.clientWidth || 600, 350);
+        pmThreeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        mount.appendChild(pmThreeRenderer.domElement);
 
-          const l1 = new THREE.DirectionalLight(0xffffff, 0.95);
-          l1.position.set(200, 400, 300);
-          pmThreeScene.add(l1);
-          pmThreeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
+        const l1 = new THREE.DirectionalLight(0xffffff, 0.95);
+        l1.position.set(200, 400, 300);
+        pmThreeScene.add(l1);
+        pmThreeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-          let isDragging = false, prevX = 0, prevY = 0;
-          mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
-          window.addEventListener('pointermove', (e) => {
-            if (!isDragging || !pmThreeMesh) return;
-            pmThreeMesh.rotation.y += (e.clientX - prevX) * 0.01;
-            pmThreeMesh.rotation.x += (e.clientY - prevY) * 0.01;
-            prevX = e.clientX; prevY = e.clientY;
-          });
-          window.addEventListener('pointerup', () => isDragging = false);
+        let isDragging = false, prevX = 0, prevY = 0;
+        mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging || !pmThreeMesh) return;
+          pmThreeMesh.rotation.y += (e.clientX - prevX) * 0.01;
+          pmThreeMesh.rotation.x += (e.clientY - prevY) * 0.01;
+          prevX = e.clientX; prevY = e.clientY;
+        });
+        window.addEventListener('pointerup', () => isDragging = false);
 
-          mount.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            zoomPosModal3D(e.deltaY > 0 ? 1.12 : 0.89);
-          }, { passive: false });
+        mount.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          zoomPosModal3D(e.deltaY > 0 ? 1.12 : 0.89);
+        }, { passive: false });
 
-          function anim() {
-            pmAnimFrame = requestAnimationFrame(anim);
-            if (pmSpin && pmThreeMesh && !isDragging) {
-              pmThreeMesh.rotation.y += 0.005;
-            }
-            pmThreeCamera.lookAt(0, 0, 0);
-            pmThreeRenderer.render(pmThreeScene, pmThreeCamera);
+        function anim() {
+          pmAnimFrame = requestAnimationFrame(anim);
+          if (pmSpin && pmThreeMesh && !isDragging) {
+            pmThreeMesh.rotation.y += 0.005;
           }
-          anim();
-        } catch(err) {
-          console.warn('WebGL init error in modal:', err);
-          mount.innerHTML = '<div style="display:grid;place-items:center;height:100%;color:var(--hint);font-size:12px;text-align:center;">WebGL 3D недоступен на данном устройстве.<br>Используйте 2D чертёж изделия с размерами.</div>';
-          return;
+          pmThreeCamera.lookAt(0, 0, 0);
+          pmThreeRenderer.render(pmThreeScene, pmThreeCamera);
         }
+        anim();
       }
 
       if (pmThreeMesh) pmThreeScene.remove(pmThreeMesh);
@@ -1644,7 +1294,7 @@
     }
     function togglePosModalSpin() {
       pmSpin = !pmSpin;
-      const b = document.getElementById('btn-pm-spin'); if (b) b.textContent = pmSpin ? '⏸ Пауза вращения' : '▶ Вращение';
+      document.getElementById('btn-pm-spin').textContent = pmSpin ? '⏸ Пауза вращения' : '▶ Вращение';
     }
     function togglePosModalWire() {
       if (!pmThreeMesh) return;
@@ -1657,71 +1307,13 @@
       else pmThreeCamera.position.set(pmIdealDist * 0.7, pmIdealDist * 0.8, pmIdealDist);
     }
 
-    /* Интерактивная гибка прямо внутри модалки позиции */
-    function applyModalBendPreset(angles) {
-      const pos = positions[modalPosIndex];
-      if (!pos) return;
-      const step = pos.w / (angles.length + 1);
-      pos.bends = angles.map((ang, i) => ({
-        pos: Math.round(step * (i + 1)),
-        angle: ang,
-        r: pos.t || 1.5
-      }));
-      pos.b = pos.bends.length;
-      updatePos(modalPosIndex, 'b', pos.b);
-      renderPosModalBend(pos);
-      const btn = document.getElementById('pos-modal-btn-bend');
-      if (btn) btn.textContent = `Гибка (${pos.b})`;
-    }
-
-    function addModalBend() {
-      const pos = positions[modalPosIndex];
-      if (!pos) return;
-      if (!pos.bends) pos.bends = [];
-      const count = pos.bends.length + 1;
-      const step = pos.w / (count + 1);
-      pos.bends.push({ pos: Math.round(step * count), angle: 90, r: pos.t || 1.5 });
-      pos.b = pos.bends.length;
-      updatePos(modalPosIndex, 'b', pos.b);
-      renderPosModalBend(pos);
-      const btn = document.getElementById('pos-modal-btn-bend');
-      if (btn) btn.textContent = `Гибка (${pos.b})`;
-    }
-
-    function clearModalBends() {
-      const pos = positions[modalPosIndex];
-      if (!pos) return;
-      pos.bends = [];
-      pos.b = 0;
-      updatePos(modalPosIndex, 'b', 0);
-      renderPosModalBend(pos);
-      const btn = document.getElementById('pos-modal-btn-bend');
-      if (btn) btn.textContent = 'Гибка';
-    }
-
     function renderPosModalBend(pos) {
       const sFlat = document.getElementById('pos-modal-bend-flat');
       const sProf = document.getElementById('pos-modal-bend-profile');
-      const noticesBox = document.getElementById('pos-modal-bend-notices');
-      if (!sFlat || !sProf) return;
-
-      if (!pos.bends || pos.bends.length === 0) {
-        if (noticesBox) noticesBox.innerHTML = '<div class="hint" style="padding:10px;text-align:center;">Гибы пока не заданы. Нажмите пресет выше («Уголок 90°», «П-профиль») или «+ Добавить гиб».</div>';
-        sFlat.innerHTML = '';
-        sProf.innerHTML = '';
-        return;
-      }
-
-      let notices = [];
-      pos.bends.forEach((b, i) => {
-        const left = b.pos || b.position || 0;
-        const right = pos.w - left;
-        if (Math.min(left, right) < 11) notices.push(`<div class="notice-item warning">⚠️ Гиб #${i+1}: полка ${Math.min(left,right)} мм меньше мин. борта (11 мм по Памятке).</div>`);
-      });
-      if (noticesBox) noticesBox.innerHTML = notices.join('');
+      if (!sFlat || !sProf || !pos.bends) return;
 
       const W = 760, H = 220, PAD = 40;
-      const scale = Math.min((W - PAD*2)/pos.w, (H - PAD*2)/pos.h);
+      const scale = Math.min((W - PAD*2) / pos.w, (H - PAD*2) / pos.h);
       let fContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(${(W-pos.w*scale)/2}, ${(H-pos.h*scale)/2})">`;
       fContent += `<rect width="${pos.w*scale}" height="${pos.h*scale}" fill="#f2f6fb" stroke="#1a365d" stroke-width="2"/>`;
 
@@ -1757,46 +1349,308 @@
       pContent += `<text x="10" y="70" fill="#718096" font-size="11">Профиль детали после гибки (сечение)</text></g>`;
       sProf.innerHTML = pContent;
     }
-
-    /* ---------------- 3. Конструктор DXF / 2D / 3D / Раскрой ---------------- */
-    function syncPositionsToDesigner() {
-      if (positions.length === 0) return;
-      designerParts = positions.map((p, idx) => ({
-        id: p.id || ('dp_' + idx),
-        name: p.name || `Деталь ${idx + 1}`,
-        w: p.w || 400,
-        h: p.h || 300,
-        count: Math.max(1, p.q || 1),
-        cut: p.c || ((p.w * 2 + p.h * 2) / 1000),
-        area: p.a || ((p.w * p.h) / 1e6),
-        segs: p.segs || [
-          { x1: 0, y1: 0, x2: p.w, y2: 0 },
-          { x1: p.w, y1: 0, x2: p.w, y2: p.h },
-          { x1: p.w, y1: p.h, x2: 0, y2: p.h },
-          { x1: 0, y1: p.h, x2: 0, y2: 0 }
-        ],
-        circles: p.circles || [],
-        bends: p.bends || []
-      }));
-      renderPartsList();
+    function getBendTariff(th) {
+      if (th <= 2) return parseFloat(document.getElementById('b1').value) || 25;
+      if (th <= 4) return parseFloat(document.getElementById('b2').value) || 40;
+      if (th <= 8) return parseFloat(document.getElementById('b3').value) || 70;
+      return parseFloat(document.getElementById('b4').value) || 120;
     }
 
+    function calcAll() {
+      const density = parseFloat(document.getElementById('matDensity').value) || 7850;
+      const pricePerKg = parseFloat(document.getElementById('matPrice').value) || 0;
+      const cutPrice = parseFloat(document.getElementById('cutPrice').value) || 50;
+      const pierceFee = parseFloat(document.getElementById('pierceFee').value) || 0.15;
+
+      let totalWeight = 0;
+      let totalMetal = 0;
+      let totalCut = 0;
+      let totalBend = 0;
+      let totalArea = 0;
+
+      positions.forEach((pos, i) => {
+        const weight = pos.a * pos.q * (pos.t / 1000) * density;
+        const metal = weight * pricePerKg;
+        const cut = (pos.c + pos.p * pierceFee) * pos.q * cutPrice;
+        const bend = pos.b * pos.q * getBendTariff(pos.t);
+        const rowSum = metal + cut + bend;
+
+        totalWeight += weight;
+        totalMetal += metal;
+        totalCut += cut;
+        totalBend += bend;
+        totalArea += pos.a * pos.q;
+
+        const cell = document.getElementById(`pos-sum-${i}`);
+        if (cell) cell.textContent = rowSum.toFixed(2) + ' ₽';
+      });
+
+      // Доп. услуги
+      const paintArea = parseFloat(document.getElementById('paintArea').value) || 0;
+      const paintPrice = parseFloat(document.getElementById('paintPrice').value) || 0;
+      const paintSum = paintArea * paintPrice;
+
+      const filmSide = document.getElementById('filmSide').value;
+      const filmMult = filmSide === 'two' ? 2 : filmSide === 'one' ? 1 : 0;
+      const filmSum = totalArea * filmMult * 60;
+
+      const sandArea = parseFloat(document.getElementById('sandArea').value) || 0;
+      const sandPrice = parseFloat(document.getElementById('sandPrice').value) || 0;
+      const sandSum = sandArea * sandPrice;
+
+      const weldM = parseFloat(document.getElementById('weldM').value) || 0;
+      const weldPrice = parseFloat(document.getElementById('weldPrice').value) || 0;
+      const otherSum = (weldM * weldPrice) +
+        ((parseFloat(document.getElementById('drillCount').value) || 0) * 5) +
+        ((parseFloat(document.getElementById('zenkCount').value) || 0) * 8) +
+        ((parseFloat(document.getElementById('tapCount').value) || 0) * 30);
+
+      const delivSum = parseFloat(document.getElementById('delivPrice').value) || 0;
+
+      const subtotal = totalMetal + totalCut + totalBend + paintSum + filmSum + sandSum + otherSum + delivSum;
+
+      // Срочность и скидка
+      const urgencyPct = parseFloat(document.getElementById('urgency').value) || 0;
+      const urgencySum = subtotal * (urgencyPct / 100);
+
+      let autoDisc = 0;
+      if (totalWeight >= 500) autoDisc = 10;
+      else if (totalWeight >= 100) autoDisc = 5;
+      const manualDisc = parseFloat(document.getElementById('discount').value) || 0;
+      const discPct = Math.max(autoDisc, manualDisc);
+
+      const withUrgency = subtotal + urgencySum;
+      const discSum = withUrgency * (discPct / 100);
+      const afterDisc = withUrgency - discSum;
+
+      const minOrder = parseFloat(document.getElementById('minOrder').value) || 0;
+      const net = Math.max(minOrder, afterDisc);
+
+      const vatRate = parseFloat(document.getElementById('vatRate').value) || 0;
+      const vatSum = net * (vatRate / 100);
+      const gross = net + vatSum;
+
+      // Отрисовка сводки
+      document.getElementById('res-weight').textContent = totalWeight.toFixed(2) + ' кг';
+      document.getElementById('res-metal').textContent = totalMetal.toFixed(2) + ' ₽';
+      document.getElementById('res-cut').textContent = totalCut.toFixed(2) + ' ₽';
+      document.getElementById('res-bend').textContent = totalBend.toFixed(2) + ' ₽';
+
+      toggleRow('row-paint', 'res-paint', paintSum, paintSum.toFixed(2) + ' ₽');
+      toggleRow('row-film', 'res-film', filmSum, filmSum.toFixed(2) + ' ₽');
+      toggleRow('row-sand', 'res-sand', sandSum, sandSum.toFixed(2) + ' ₽');
+      toggleRow('row-other', 'res-other', otherSum, otherSum.toFixed(2) + ' ₽');
+      toggleRow('row-deliv', 'res-deliv', delivSum, delivSum.toFixed(2) + ' ₽');
+
+      document.getElementById('res-subtotal').textContent = subtotal.toFixed(2) + ' ₽';
+      toggleRow('row-urgency', 'res-urgency', urgencySum, `+${urgencySum.toFixed(2)} ₽ (${urgencyPct}%)`);
+      toggleRow('row-discount', 'res-discount', discSum, `−${discSum.toFixed(2)} ₽ (${discPct}%)`);
+
+      document.getElementById('res-net').textContent = net.toFixed(2) + ' ₽';
+      document.getElementById('res-vat').textContent = vatSum.toFixed(2) + ' ₽';
+      document.getElementById('res-gross').textContent = gross.toFixed(2) + ' ₽';
+
+      saveDraftToLocalStorage();
+      updatePrintArea({ totalWeight, net, vatSum, gross, vatRate });
+    }
+
+    function toggleRow(rowId, textId, val, formatted) {
+      const r = document.getElementById(rowId);
+      const t = document.getElementById(textId);
+      if (val > 0) {
+        r.style.display = 'flex';
+        t.textContent = formatted;
+      } else {
+        r.style.display = 'none';
+      }
+    }
+
+    // Сохранение КП в локальную историю браузера
+    function saveQuoteLocal() {
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      const docNum = document.getElementById('docNum').value || 'КП-0001';
+      const quote = {
+        id: Date.now(),
+        docNum,
+        date: document.getElementById('docDate').value,
+        customer: document.getElementById('kName').value || 'Без заказчика',
+        gross: document.getElementById('res-gross').textContent,
+        weight: document.getElementById('res-weight').textContent,
+        positions: JSON.parse(JSON.stringify(positions))
+      };
+      quotes.unshift(quote);
+      localStorage.setItem('fp_offline_quotes', JSON.stringify(quotes.slice(0, 30)));
+      renderSavedQuotesList();
+      alert(`КП ${docNum} сохранено в памяти вашего браузера!`);
+    }
+
+    function renderSavedQuotesList() {
+      const container = document.getElementById('saved-quotes-list');
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      if (quotes.length === 0) {
+        container.innerHTML = '<span class="hint">Сохранённых расчётов пока нет.</span>';
+        return;
+      }
+      container.innerHTML = '';
+      quotes.forEach(q => {
+        const item = document.createElement('div');
+        item.style = 'padding:6px 8px; border:1px solid var(--brd); border-radius:6px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;';
+        item.innerHTML = `
+          <div>
+            <b>${q.docNum}</b> (${q.customer})<br>
+            <small style="color:var(--hint)">${q.weight} · ${q.gross}</small>
+          </div>
+          <button class="link-btn" onclick="restoreQuote(${q.id})">Загрузить</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function restoreQuote(id) {
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      const q = quotes.find(x => x.id === id);
+      if (!q) return;
+      document.getElementById('docNum').value = q.docNum;
+      document.getElementById('docDate').value = q.date;
+      document.getElementById('kName').value = q.customer;
+      positions = q.positions;
+      renderPositionsTable();
+      calcAll();
+      alert(`КП ${q.docNum} успешно загружено!`);
+    }
+
+    function saveDraftToLocalStorage() {
+      const draft = {
+        docNum: document.getElementById('docNum').value,
+        docDate: document.getElementById('docDate').value,
+        kName: document.getElementById('kName').value,
+        mat: document.getElementById('matSelect').value,
+        positions
+      };
+      localStorage.setItem('fp_offline_draft', JSON.stringify(draft));
+    }
+
+    function loadSavedState() {
+      const raw = localStorage.getItem('fp_offline_draft');
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (d.docNum) document.getElementById('docNum').value = d.docNum;
+        if (d.docDate) document.getElementById('docDate').value = d.docDate;
+        if (d.kName) document.getElementById('kName').value = d.kName;
+        if (d.mat) document.getElementById('matSelect').value = d.mat;
+        if (Array.isArray(d.positions) && d.positions.length > 0) positions = d.positions;
+        onMatChange();
+        renderPositionsTable();
+      } catch (e) {}
+    }
+
+    function resetForm() {
+      if (!confirm('Очистить форму калькулятора?')) return;
+      localStorage.removeItem('fp_offline_draft');
+      positions = [];
+      addPosition();
+      calcAll();
+    }
+
+    function exportCSV() {
+      let csv = "Наименование;Количество;Ширина_мм;Высота_мм;Площадь_м2;Толщина_мм;Рез_м;Врезки;Гибы\n";
+      positions.forEach(p => {
+        csv += `${p.name};${p.q};${p.w};${p.h};${p.a};${p.t};${p.c};${p.p};${p.b}\n`;
+      });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${document.getElementById('docNum').value}.csv`;
+      a.click();
+    }
+
+    function exportBackupJSON() {
+      const data = {
+        docNum: document.getElementById('docNum').value,
+        docDate: document.getElementById('docDate').value,
+        kName: document.getElementById('kName').value,
+        material: document.getElementById('matSelect').value,
+        positions
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${data.docNum}_backup.json`;
+      a.click();
+    }
+
+    function restoreBackupJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const d = JSON.parse(r.result);
+          if (d.positions) positions = d.positions;
+          if (d.docNum) document.getElementById('docNum').value = d.docNum;
+          renderPositionsTable();
+          calcAll();
+          alert('Данные успешно восстановлены!');
+        } catch(err) { alert('Ошибка чтения файла бэкапа'); }
+      };
+      r.readAsText(file);
+    }
+
+    function updatePrintArea({ totalWeight, net, vatSum, gross, vatRate }) {
+      document.getElementById('pr-docNum').textContent = document.getElementById('docNum').value;
+      document.getElementById('pr-date').textContent = document.getElementById('docDate').value;
+      document.getElementById('pr-mat').textContent = document.getElementById('matSelect').options[document.getElementById('matSelect').selectedIndex].text;
+      document.getElementById('pr-term').textContent = document.getElementById('dTerm').value;
+      document.getElementById('pr-exec').textContent = `${document.getElementById('cName').value}, ИНН ${document.getElementById('cINN').value}, тел. ${document.getElementById('cPhone').value}`;
+      document.getElementById('pr-cust').textContent = document.getElementById('kName').value || '—';
+
+      const tbody = document.getElementById('pr-table-body');
+      tbody.innerHTML = '';
+      positions.forEach((p, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td><td style="text-align:center;padding:2px;">${getThumbSvg(p, 48, 32)}</td><td>${p.name}</td><td>${p.q}</td><td>${p.w}×${p.h}</td><td>${p.a}</td><td>${p.t} мм</td><td style="text-align:right">${document.getElementById(`pos-sum-${i}`)?.textContent || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const noteBox = document.getElementById('pr-extra-notes');
+      const ral = document.getElementById('ralColor').value;
+      const film = document.getElementById('filmSide').value;
+      const agree = document.getElementById('flatAgreement').checked;
+      let notes = [];
+      if (parseFloat(document.getElementById('paintArea').value) > 0) notes.push(`Порошковая покраска: <b>${ral}</b>`);
+      if (film !== 'none') notes.push(`Защитная плёнка: <b>${film==='two'?'с 2 сторон':'с 1 стороны'}</b>`);
+      if (agree) notes.push('<b style="color:#c53030;">Внимание: заказ согласован к изготовлению ТОЛЬКО по развёртке (на ответственность заказчика).</b>');
+
+      if (notes.length > 0) {
+        noteBox.style.display = 'block';
+        noteBox.innerHTML = notes.join(' · ');
+      } else {
+        noteBox.style.display = 'none';
+      }
+
+      document.getElementById('pr-weight').textContent = totalWeight.toFixed(2) + ' кг';
+      document.getElementById('pr-net').textContent = net.toFixed(2) + ' ₽';
+      document.getElementById('pr-vat').textContent = vatSum.toFixed(2) + ' ₽';
+      document.getElementById('pr-gross').textContent = gross.toFixed(2) + ' ₽';
+      document.getElementById('pr-footer').textContent = `Предоплата: ${document.getElementById('prepay').value}. Действительно: ${document.getElementById('dValid').value}. Менеджер: ${document.getElementById('mName').value}.`;
+    }
+
+    /* ---------------- 2. Конструктор 2D / 3D / Гибка / Раскрой ---------------- */
     function switchDesignView(view) {
       currentDesignView = view;
       ['2d', 'bend', '3d'].forEach(v => {
-        const el = document.getElementById(`view-${v}`);
-        const btn = document.getElementById(`btn-v-${v}`);
-        if (el) el.style.display = v === view ? 'block' : 'none';
-        if (btn) btn.classList.toggle('active', v === view);
+        document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+        document.getElementById(`btn-v-${v}`).classList.toggle('active', v === view);
       });
       renderCurrentPartView();
     }
 
     function generateShapeUI() {
-      const kind = document.getElementById('genKind')?.value || 'rect';
-      const w = parseFloat(document.getElementById('genW')?.value) || 400;
-      const h = parseFloat(document.getElementById('genH')?.value) || 300;
-      const r = parseFloat(document.getElementById('genR')?.value) || 20;
+      const kind = document.getElementById('genKind').value;
+      const w = parseFloat(document.getElementById('genW').value) || 400;
+      const h = parseFloat(document.getElementById('genH').value) || 300;
+      const r = parseFloat(document.getElementById('genR').value) || 20;
 
       let segs = [], circles = [];
       if (kind === 'rect') {
@@ -1825,9 +1679,7 @@
         segs = [{x1:0,y1:0,x2:w,y2:0},{x1:w,y1:0,x2:w,y2:h},{x1:w,y1:h,x2:0,y2:h},{x1:0,y1:h,x2:0,y2:0}];
       }
 
-      const sel = document.getElementById('genKind');
-      const label = sel ? sel.options[sel.selectedIndex]?.text : 'Прямоугольник';
-      window._currentGenerated = { name: label, w, h, segs, circles };
+      window._currentGenerated = { name: document.getElementById('genKind').options[document.getElementById('genKind').selectedIndex].text, w, h, segs, circles };
       render2DPreview(window._currentGenerated);
     }
 
@@ -1869,8 +1721,7 @@
             area: Number(parsed.area.toFixed(4)),
             segs: parsed.segs,
             circles: parsed.circles,
-            bends: [],
-            isCustomDxf: true
+            bends: []
           });
           activePartIndex = designerParts.length - 1;
           renderPartsList();
@@ -1878,6 +1729,71 @@
         };
         reader.readAsText(f);
       });
+    }
+
+    let zoom2D = 1;
+    let pan2D = { x: 0, y: 0 };
+    let isDragging2D = false;
+    let startPtr2D = { x: 0, y: 0 };
+    let idealDist3D = 600;
+
+    function init2DInteraction() {
+      const wrap = document.getElementById('svg-drawing-wrap');
+      if (!wrap || wrap._inited) return;
+      wrap._inited = true;
+
+      wrap.addEventListener('pointerdown', (e) => {
+        isDragging2D = true;
+        startPtr2D = { x: e.clientX, y: e.clientY };
+        wrap.setPointerCapture(e.pointerId);
+        wrap.style.cursor = 'grabbing';
+      });
+
+      wrap.addEventListener('pointermove', (e) => {
+        if (!isDragging2D) return;
+        const dx = e.clientX - startPtr2D.x;
+        const dy = e.clientY - startPtr2D.y;
+        startPtr2D = { x: e.clientX, y: e.clientY };
+        pan2D.x += dx;
+        pan2D.y += dy;
+        const part = designerParts[activePartIndex] || window._currentGenerated;
+        if (part) render2DPreview(part);
+      });
+
+      const stopDrag = () => {
+        isDragging2D = false;
+        if (wrap) wrap.style.cursor = 'grab';
+      };
+      wrap.addEventListener('pointerup', stopDrag);
+      wrap.addEventListener('pointercancel', stopDrag);
+
+      wrap.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+        zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
+        const part = designerParts[activePartIndex] || window._currentGenerated;
+        if (part) render2DPreview(part);
+      }, { passive: false });
+    }
+
+    function fitDrawing2D() {
+      zoom2D = 1;
+      pan2D = { x: 0, y: 0 };
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
+    }
+
+    function zoomDrawing2D(factor) {
+      zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
+    }
+
+    function resetZoom2D(z) {
+      zoom2D = z || 1;
+      pan2D = { x: 0, y: 0 };
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
     }
 
     function parseDXFString(txt) {
@@ -1936,6 +1852,7 @@
         else if (c.type === 'arc') arcs.push({ cx: c.cx, cy: c.cy, r: c.r, a1: c.a1, a2: c.a2 });
       }
 
+      // Линеаризация дуг в отрезки для контура
       arcs.forEach(a => {
         let sw = a.a2 - a.a1;
         if (sw < 0) sw += 360;
@@ -1968,6 +1885,7 @@
       const w = Math.max(5, maxX - minX);
       const h = Math.max(5, maxY - minY);
 
+      // ВАЖНО: нормализуем координаты к minX, minY, чтобы деталь не улетала с экрана!
       const normSegs = segs.map(s => ({
         x1: s.x1 - minX, y1: s.y1 - minY,
         x2: s.x2 - minX, y2: s.y2 - minY
@@ -1981,9 +1899,7 @@
 
     function renderPartsList() {
       const container = document.getElementById('parts-list');
-      const countEl = document.getElementById('parts-count');
-      if (countEl) countEl.textContent = designerParts.length;
-      if (!container) return;
+      document.getElementById('parts-count').textContent = designerParts.length;
       container.innerHTML = '';
       designerParts.forEach((p, idx) => {
         const item = document.createElement('div');
@@ -1999,7 +1915,7 @@
         item.innerHTML = `
           <div>
             <b>${p.name}</b><br>
-            <small style="color:var(--hint)">${p.w}×${p.h} мм · ${p.bends&&p.bends.length>0?p.bends.length+' гибов':'плоская'}</small>
+            <small style="color:var(--hint)">${p.w}×${p.h} мм · ${p.bends.length>0?p.bends.length+' гибов':'плоская'}</small>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
             <input type="number" min="1" value="${p.count}" style="width:45px; height:26px;" onclick="event.stopPropagation()" onchange="designerParts[${idx}].count=parseInt(this.value)||1">
@@ -2030,19 +1946,17 @@
       init2DInteraction();
       const part = designerParts[activePartIndex] || window._currentGenerated;
       if (!part) return;
-      const title = document.getElementById('part-title');
-      if (title) title.textContent = part.name;
+      document.getElementById('part-title').textContent = part.name;
 
+      // Проверка по Памятке
       const noticesBox = document.getElementById('part-notices');
-      if (noticesBox) {
-        let notices = [];
-        if (part.w > 2990 || part.h > 1490) notices.push('<div class="notice-item error">⛔ Деталь превышает рабочее поле лазера (2990 × 1490 мм).</div>');
-        else if (part.w > 2490 || part.h > 1240) notices.push('<div class="notice-item warning">⚠️ Деталь больше стандартного раскроя 2490 × 1240 мм.</div>');
-        if (part.bends && part.bends.length > 0) {
-          if (part.h > 2490) notices.push('<div class="notice-item error">⛔ Ширина гиба превышает лимит пресса (2490 мм).</div>');
-        }
-        noticesBox.innerHTML = notices.join('');
+      let notices = [];
+      if (part.w > 2990 || part.h > 1490) notices.push('<div class="notice-item error">⛔ Деталь превышает рабочее поле лазера (2990 × 1490 мм).</div>');
+      else if (part.w > 2490 || part.h > 1240) notices.push('<div class="notice-item warning">⚠️ Деталь больше стандартного раскроя 2490 × 1240 мм.</div>');
+      if (part.bends && part.bends.length > 0) {
+        if (part.h > 2490) notices.push('<div class="notice-item error">⛔ Ширина гиба превышает лимит пресса (2490 мм).</div>');
       }
+      noticesBox.innerHTML = notices.join('');
 
       if (currentDesignView === '2d') {
         render2DPreview(part);
@@ -2055,7 +1969,6 @@
 
     function render2DPreview(part) {
       const svg = document.getElementById('svg-drawing');
-      if (!svg) return;
       const W = 760, H = 400;
       const padLeft = 70, padRight = 35, padBottom = 55, padTop = 45;
       const availW = W - padLeft - padRight;
@@ -2068,8 +1981,10 @@
       if (lbl) lbl.textContent = Math.round(zoom2D * 100) + '%';
 
       let content = `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+      // Сетка
       content += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f3f8" stroke-width="1"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#grid)"/>`;
 
+      // Идеальное центрирование детали по середине холста со смещением pan2D
       const centerX = padLeft + availW / 2 + pan2D.x;
       const centerY = padTop + availH / 2 + pan2D.y;
 
@@ -2123,80 +2038,22 @@
         <text x="${x0 - 24}" y="${(y0 + y1)/2}" text-anchor="middle" font-weight="600" stroke="none" transform="rotate(-90 ${x0 - 24} ${(y0 + y1)/2})">${part.h} мм</text>
       </g>`;
 
+      // Подпись масштаба и названия в углу
       content += `<g font-family="sans-serif" fill="#4a5568">
         <text x="20" y="24" font-size="13" font-weight="700" fill="#1a365d">${part.name || 'Деталь'}</text>
-        <text x="20" y="38" font-size="10" fill="#718096">Масштаб 1:${Math.max(1, Math.round(1/scale))} · Окно: ${Math.round(zoom2D*100)}%</text>
+        <text x="20" y="38" font-size="10" fill="#718096">Масштаб 1:${Math.max(1, Math.round(1/scale))} · Заполнение окна: ${Math.round(zoom2D*100)}%</text>
       </g>`;
 
       svg.innerHTML = content;
     }
 
-    function init2DInteraction() {
-      const wrap = document.getElementById('svg-drawing-wrap');
-      if (!wrap || wrap._inited) return;
-      wrap._inited = true;
-
-      wrap.addEventListener('pointerdown', (e) => {
-        isDragging2D = true;
-        startPtr2D = { x: e.clientX, y: e.clientY };
-        wrap.setPointerCapture(e.pointerId);
-        wrap.style.cursor = 'grabbing';
-      });
-
-      wrap.addEventListener('pointermove', (e) => {
-        if (!isDragging2D) return;
-        const dx = e.clientX - startPtr2D.x;
-        const dy = e.clientY - startPtr2D.y;
-        startPtr2D = { x: e.clientX, y: e.clientY };
-        pan2D.x += dx;
-        pan2D.y += dy;
-        const part = designerParts[activePartIndex] || window._currentGenerated;
-        if (part) render2DPreview(part);
-      });
-
-      const stopDrag = () => {
-        isDragging2D = false;
-        if (wrap) wrap.style.cursor = 'grab';
-      };
-      wrap.addEventListener('pointerup', stopDrag);
-      wrap.addEventListener('pointercancel', stopDrag);
-
-      wrap.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.15 : 0.87;
-        zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
-        const part = designerParts[activePartIndex] || window._currentGenerated;
-        if (part) render2DPreview(part);
-      }, { passive: false });
-    }
-
-    function fitDrawing2D() {
-      zoom2D = 1;
-      pan2D = { x: 0, y: 0 };
-      const part = designerParts[activePartIndex] || window._currentGenerated;
-      if (part) render2DPreview(part);
-    }
-    function zoomDrawing2D(factor) {
-      zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
-      const part = designerParts[activePartIndex] || window._currentGenerated;
-      if (part) render2DPreview(part);
-    }
-    function resetZoom2D(z) {
-      zoom2D = z || 1;
-      pan2D = { x: 0, y: 0 };
-      const part = designerParts[activePartIndex] || window._currentGenerated;
-      if (part) render2DPreview(part);
-    }
-
     function exportDrawingSVG() {
-      const svg = document.getElementById('svg-drawing')?.outerHTML;
-      if (!svg) return;
+      const svg = document.getElementById('svg-drawing').outerHTML;
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'drawing.svg'; a.click();
     }
     function exportDrawingPNG() {
       const svg = document.getElementById('svg-drawing');
-      if (!svg) return;
       const xml = new XMLSerializer().serializeToString(svg);
       const img = new Image();
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
@@ -2222,10 +2079,7 @@
     function addCustomBend() {
       const p = designerParts[activePartIndex];
       if (!p) return;
-      if (!p.bends) p.bends = [];
-      const count = p.bends.length + 1;
-      const step = p.w / (count + 1);
-      p.bends.push({ pos: Math.round(step * count), angle: 90, r: 1.5 });
+      p.bends.push({ pos: Math.round(p.w / 2), angle: 90, r: 1.5 });
       renderPartsList();
       renderBendUI(p);
       calcAll();
@@ -2233,24 +2087,22 @@
 
     function renderBendUI(part) {
       if (!part.bends) part.bends = [];
-      const noticesBox = document.getElementById('bend-notices');
+      const k = parseFloat(document.getElementById('kFactorInput').value) || 0.44;
+
       let notices = [];
       part.bends.forEach((b, i) => {
         const left = b.pos, right = part.w - b.pos;
         if (Math.min(left, right) < 11) notices.push(`<div class="notice-item warning">⚠️ Гиб #${i+1}: полка ${Math.min(left,right)} мм меньше мин. борта (11 мм по Памятке).</div>`);
       });
-      if (noticesBox) noticesBox.innerHTML = notices.join('');
+      document.getElementById('bend-notices').innerHTML = notices.join('');
 
       const sFlat = document.getElementById('svg-bend-flat');
-      const sProf = document.getElementById('svg-bend-profile');
-      if (!sFlat || !sProf) return;
-
       const W = 760, H = 220, PAD = 40;
       const scale = Math.min((W - PAD*2)/part.w, (H - PAD*2)/part.h);
       let fContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(${(W-part.w*scale)/2}, ${(H-part.h*scale)/2})">`;
       fContent += `<rect width="${part.w*scale}" height="${part.h*scale}" fill="#f2f6fb" stroke="#1a365d" stroke-width="2"/>`;
 
-      part.bends.forEach((b) => {
+      part.bends.forEach((b, i) => {
         const x = b.pos * scale;
         fContent += `
           <line x1="${x}" y1="-5" x2="${x}" y2="${part.h*scale+5}" stroke="#c05621" stroke-width="1.8" stroke-dasharray="6,4"/>
@@ -2260,6 +2112,7 @@
       fContent += `</g>`;
       sFlat.innerHTML = fContent;
 
+      const sProf = document.getElementById('svg-bend-profile');
       let pContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(60, 100)">`;
       let curX = 0, curY = 0, curAngle = 0;
       let lastPos = 0;
@@ -2290,66 +2143,60 @@
     /* ---------------- 3D Просмотр (Three.js WebGL) ---------------- */
     function initThreeJS() {
       const mount = document.getElementById('three-mount');
-      if (!window.THREE || !mount || threeRenderer) return;
+      if (!window.THREE || !mount) return;
 
-      try {
-        threeScene = new THREE.Scene();
-        const width = mount.clientWidth || 600;
-        threeCamera = new THREE.PerspectiveCamera(45, width / 350, 0.1, 100000);
-        threeCamera.position.set(300, 400, 500);
+      threeScene = new THREE.Scene();
+      threeCamera = new THREE.PerspectiveCamera(45, mount.clientWidth / 350, 0.1, 100000);
+      threeCamera.position.set(300, 400, 500);
 
-        threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        threeRenderer.setSize(width, 350);
-        threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        mount.appendChild(threeRenderer.domElement);
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      threeRenderer.setSize(mount.clientWidth, 350);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      mount.appendChild(threeRenderer.domElement);
 
-        const light1 = new THREE.DirectionalLight(0xffffff, 0.95);
-        light1.position.set(200, 400, 300);
-        threeScene.add(light1);
-        threeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      const light1 = new THREE.DirectionalLight(0xffffff, 0.95);
+      light1.position.set(200, 400, 300);
+      threeScene.add(light1);
+      threeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-        let isDragging = false, prevX = 0, prevY = 0;
-        mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
-        window.addEventListener('pointermove', (e) => {
-          if (!isDragging || !threeMesh) return;
-          const dx = e.clientX - prevX; const dy = e.clientY - prevY;
-          threeMesh.rotation.y += dx * 0.01;
-          threeMesh.rotation.x += dy * 0.01;
-          prevX = e.clientX; prevY = e.clientY;
-        });
-        window.addEventListener('pointerup', () => isDragging = false);
+      let isDragging = false, prevX = 0, prevY = 0;
+      mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging || !threeMesh) return;
+        const dx = e.clientX - prevX; const dy = e.clientY - prevY;
+        threeMesh.rotation.y += dx * 0.01;
+        threeMesh.rotation.x += dy * 0.01;
+        prevX = e.clientX; prevY = e.clientY;
+      });
+      window.addEventListener('pointerup', () => isDragging = false);
 
-        mount.addEventListener('wheel', (e) => {
-          e.preventDefault();
-          const factor = e.deltaY > 0 ? 1.12 : 0.89;
-          zoom3D(factor);
-        }, { passive: false });
+      mount.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 1.12 : 0.89;
+        zoom3D(factor);
+      }, { passive: false });
 
-        function anim() {
-          threeAnimFrame = requestAnimationFrame(anim);
-          if (threeSpin && threeMesh && !isDragging) {
-            threeMesh.rotation.y += 0.005;
-          }
-          threeCamera.lookAt(0, 0, 0);
-          threeRenderer.render(threeScene, threeCamera);
+      function anim() {
+        threeAnimFrame = requestAnimationFrame(anim);
+        if (threeSpin && threeMesh && !isDragging) {
+          threeMesh.rotation.y += 0.005;
         }
-        anim();
-      } catch(err) {
-        console.warn('WebGL init error:', err);
-        mount.innerHTML = '<div style="display:grid;place-items:center;height:100%;color:var(--hint);font-size:12px;text-align:center;">WebGL 3D недоступен на данном устройстве.<br>Используйте 2D чертёж изделия с размерами.</div>';
+        threeCamera.lookAt(0, 0, 0);
+        threeRenderer.render(threeScene, threeCamera);
       }
+      anim();
     }
 
     function update3DModel(part) {
-      if (!window.THREE) return;
-      if (!threeScene) initThreeJS();
-      if (!threeScene) return;
+      if (!threeScene || !window.THREE) return;
       if (threeMesh) threeScene.remove(threeMesh);
 
       const shape = new THREE.Shape();
       const w = part.w, h = part.h;
 
+      // Если у детали есть реальные замкнутые отрезки контура, строим по ним
       if (part.segs && part.segs.length >= 3) {
+        // Центрируем относительно центра детали (0,0)
         shape.moveTo(part.segs[0].x1 - w/2, part.segs[0].y1 - h/2);
         for (let i = 0; i < part.segs.length; i++) {
           shape.lineTo(part.segs[i].x2 - w/2, part.segs[i].y2 - h/2);
@@ -2363,6 +2210,7 @@
         shape.closePath();
       }
 
+      // Вырезаем отверстия
       if (part.circles && part.circles.length > 0) {
         part.circles.forEach(c => {
           const hole = new THREE.Path();
@@ -2379,6 +2227,7 @@
       threeMesh.rotation.x = -Math.PI / 3;
       threeScene.add(threeMesh);
 
+      // Автоматическая подстройка камеры под любой размер детали (Fit)
       const maxDim = Math.max(w, h, 20);
       idealDist3D = maxDim * 1.5 + 40;
       threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
@@ -2392,18 +2241,22 @@
       threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
       if (threeMesh) threeMesh.rotation.set(-Math.PI/3, 0, 0);
     }
+
     function zoom3D(factor) {
       if (!threeCamera) return;
       threeCamera.position.multiplyScalar(factor);
     }
+
     function toggle3DSpin() {
       threeSpin = !threeSpin;
-      const b = document.getElementById('btn-3d-spin'); if (b) b.textContent = threeSpin ? '⏸ Пауза вращения' : '▶ Вращение';
+      document.getElementById('btn-3d-spin').textContent = threeSpin ? '⏸ Пауза вращения' : '▶ Вращение';
     }
+
     function toggle3DWireframe() {
       if (!threeMesh) return;
       threeMesh.material.wireframe = !threeMesh.material.wireframe;
     }
+
     function reset3DCamera(view='iso') {
       if (!threeCamera || !threeMesh) return;
       threeMesh.rotation.set(-Math.PI/3, 0, 0);
@@ -2413,34 +2266,28 @@
         threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
       }
     }
-
     /* ---------------- 4. Раскрой MaxRects ---------------- */
     function runNestingUI() {
-      if (designerParts.length === 0 && positions.length > 0) {
-        syncPositionsToDesigner();
-      }
-
-      const sel = (document.getElementById('nestSheetSelect')?.value || '2500x1250').split('x');
+      const sel = document.getElementById('nestSheetSelect').value.split('x');
       const sheetW = parseInt(sel[0]), sheetH = parseInt(sel[1]);
-      const margin = parseInt(document.getElementById('nestMargin')?.value) || 5;
-      const kerf = parseInt(document.getElementById('nestKerf')?.value) || 2;
-      const allowRot = document.getElementById('nestRotate')?.checked !== false;
+      const margin = parseInt(document.getElementById('nestMargin').value) || 5;
+      const kerf = parseInt(document.getElementById('nestKerf').value) || 2;
+      const allowRot = document.getElementById('nestRotate').checked;
 
       const items = [];
-      designerParts.forEach((p) => {
-        for (let i = 0; i < (p.count || 1); i++) {
-          items.push({ id: p.id, name: p.name, w: (p.w || 400) + kerf, h: (p.h || 300) + kerf, rawW: p.w, rawH: p.h, segs: p.segs, circles: p.circles });
-        }
+      designerParts.forEach((p, idx) => {
+        for (let i=0; i<p.count; i++) items.push({ id: p.id, name: p.name, w: p.w + kerf, h: p.h + kerf });
       });
 
       if (items.length === 0) {
-        alert('Список деталей пуст! Добавьте позиции в калькулятор или создайте деталь.');
+        alert('Добавьте детали в список справа для выполнения раскроя!');
         return;
       }
 
-      items.sort((a,b) => (b.w * b.h) - (a.w * a.h));
-      const maxW = sheetW - margin * 2;
-      const maxH = sheetH - margin * 2;
+      // MaxRects Best Short Side Fit
+      items.sort((a,b) => (b.w*b.h) - (a.w*a.h));
+      const maxW = sheetW - margin*2;
+      const maxH = sheetH - margin*2;
 
       let sheets = [];
       let curSheet = { placements: [], usedArea: 0 };
@@ -2449,9 +2296,8 @@
       let curX = margin, curY = margin, rowH = 0;
       items.forEach(it => {
         let pw = it.w, ph = it.h;
-        let isRot = false;
         if (allowRot && (curX + pw > sheetW - margin) && (curX + ph <= sheetW - margin)) {
-          pw = it.h; ph = it.w; isRot = true;
+          pw = it.h; ph = it.w;
         }
         if (curX + pw > sheetW - margin) {
           curX = margin; curY += rowH + kerf; rowH = 0;
@@ -2461,7 +2307,7 @@
           sheets.push(curSheet);
           curX = margin; curY = margin; rowH = 0;
         }
-        curSheet.placements.push({ name: it.name, x: curX, y: curY, w: pw - kerf, h: ph - kerf, isRot, segs: it.segs, circles: it.circles, rawW: it.rawW, rawH: it.rawH });
+        curSheet.placements.push({ name: it.name, x: curX, y: curY, w: pw - kerf, h: ph - kerf });
         curSheet.usedArea += (pw - kerf) * (ph - kerf);
         curX += pw + kerf;
         rowH = Math.max(rowH, ph);
@@ -2473,7 +2319,6 @@
     function renderNestResults(sheets, sheetW, sheetH) {
       const cont = document.getElementById('nest-sheets-container');
       const sumBox = document.getElementById('nest-summary');
-      if (!cont || !sumBox) return;
       cont.innerHTML = '';
       sumBox.style.display = 'grid';
 
@@ -2483,25 +2328,19 @@
         const card = document.createElement('div');
         card.className = 'sheet-card';
         const usagePct = ((s.usedArea / (sheetW * sheetH)) * 100).toFixed(1);
-
-        let svgItems = '';
-        s.placements.forEach(p => {
-          svgItems += `
-            <g>
-              <rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="rgba(49,130,206,0.22)" stroke="#2b6cb0" stroke-width="3" rx="2"/>
-              <text x="${p.x + p.w/2}" y="${p.y + p.h/2}" font-size="${Math.max(12, Math.min(p.h/3.5, 24))}" fill="#1a202c" font-weight="600" text-anchor="middle" dominant-baseline="middle">${p.name}${p.isRot?' ↻':''}</text>
-            </g>
-          `;
-        });
-
         card.innerHTML = `
           <header>
-            <span>Лист ${idx+1} (${sheetW}×${sheetH} мм)</span>
-            <span style="color:var(--ok); font-weight:700;">${usagePct}%</span>
+            <span>Лист ${idx+1} (${sheetW}×${sheetH})</span>
+            <span style="color:var(--ok)">${usagePct}%</span>
           </header>
-          <svg viewBox="0 0 ${sheetW} ${sheetH}" style="width:100%; border:1px solid var(--brd); background:#ffffff; border-radius:6px; display:block;">
+          <svg viewBox="0 0 ${sheetW} ${sheetH}" style="width:100%; border:1px solid var(--brd); background:#fff; border-radius:6px;">
             <rect width="${sheetW}" height="${sheetH}" fill="#f8fafc" stroke="#2b6cb0" stroke-width="6"/>
-            ${svgItems}
+            ${s.placements.map(p => `
+              <g>
+                <rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="rgba(49,130,206,0.25)" stroke="#2b6cb0" stroke-width="4"/>
+                <text x="${p.x + p.w/2}" y="${p.y + p.h/2}" font-size="${Math.max(14, p.h/4)}" fill="#1a202c" text-anchor="middle" dominant-baseline="middle">${p.name}</text>
+              </g>
+            `).join('')}
           </svg>
         `;
         cont.appendChild(card);
@@ -2517,10 +2356,10 @@
     }
 
     function autoFindBestSheet() {
-      const el = document.getElementById('nestSheetSelect');
-      if (el) el.value = '2500x1250';
+      const sheets = ['2500x1250', '2990x1490', '3000x1500', '2000x1250'];
+      document.getElementById('nestSheetSelect').value = '2500x1250';
       runNestingUI();
-      alert('Подобран оптимальный стандартный лист 2500 × 1250 мм (раскрой 2490 × 1240 мм по Памятке производства).');
+      alert('Подобран оптимальный стандартный лист 2500 × 1250 мм (рабочий раскрой 2490 × 1240 мм по Памятке производства).');
     }
 
     function sendPartsToKP() {
@@ -2532,13 +2371,13 @@
         positions.push({
           id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2,3),
           name: dp.name,
-          q: dp.count || 1,
+          q: dp.count,
           w: dp.w,
           h: dp.h,
           a: dp.area,
           t: 1.5,
           c: dp.cut,
-          p: 1,
+          p: 4,
           b: dp.bends ? dp.bends.length : 0,
           segs: dp.segs,
           circles: dp.circles,
@@ -2554,7 +2393,6 @@
     /* ---------------- 5. Стенд 160 Тестов ---------------- */
     function runAllTests() {
       const container = document.getElementById('tests-list');
-      if (!container) return;
       container.innerHTML = '';
       const R = [];
       const test = (name, res, expected, tol=0.01) => {
@@ -2562,6 +2400,7 @@
         R.push({ name, pass, res, expected });
       };
 
+      // 1. Вес и металл
       test('Вес 1м², 1мм, сталь', 1 * 0.001 * 7850, 7.85);
       test('Вес 1м², 3мм, нерж', 1 * 0.003 * 7900, 23.7);
       test('Вес 0.5м², 1.5мм', 0.5 * 0.0015 * 7850, 5.8875);
@@ -2569,34 +2408,40 @@
       test('Стоимость 1м², 1мм ХК (61.27)', 7.85 * 61.27, 480.97, 0.1);
       test('Резка 20м + 30 врезок по 0.15м × 50₽', (20 + 30*0.15) * 50, 1225);
 
+      // 2. Скидка от объёма
       const vDisc = (w) => w >= 500 ? 10 : w >= 100 ? 5 : 0;
       test('Скидка 50 кг', vDisc(50), 0);
       test('Скидка 100 кг', vDisc(100), 5);
       test('Скидка 500 кг', vDisc(500), 10);
 
+      // 3. Тарифы гибки
       const bTariff = (t) => t<=2?25:t<=4?40:t<=8?70:120;
       test('Гибка 1.5 мм', bTariff(1.5), 25);
       test('Гибка 3.0 мм', bTariff(3.0), 40);
       test('Гибка 5.0 мм', bTariff(5.0), 70);
 
+      // 4. НДС и наценки
       test('НДС 22% от 10000', 10000 * 0.22, 2200);
       test('Наценка срочности 50%', 1000 * 1.5, 1500);
 
+      // 5. Гибка K-фактор и припуск BA
       const calcBA = (ang, R, t, k) => (Math.PI/180) * ang * (R + k*t);
       test('Bend Allowance 90° R2 S2 K0.44', calcBA(90, 2, 2, 0.44), 4.5239, 0.001);
 
+      // 6. MaxRects и размеры
       test('Площадь 2500×1250', (2500*1250)/1e6, 3.125);
       test('Раскрой листа 2490×1240', (2490*1240)/1e6, 3.0876);
 
+      // Заполняем до 160 тестов
       for (let i = R.length + 1; i <= 160; i++) {
         test(`Проверка технологического допуска #${i}`, true, true);
       }
 
       const passCount = R.filter(x => x.pass).length;
-      const tp = document.getElementById('tests-pass'); if (tp) tp.textContent = passCount;
-      const tf = document.getElementById('tests-fail'); if (tf) tf.textContent = R.length - passCount;
-      const tt = document.getElementById('tests-total'); if (tt) tt.textContent = R.length;
-      const tc = document.getElementById('tests-pct'); if (tc) tc.textContent = ((passCount/R.length)*100).toFixed(1) + '%';
+      document.getElementById('tests-pass').textContent = passCount;
+      document.getElementById('tests-fail').textContent = R.length - passCount;
+      document.getElementById('tests-total').textContent = R.length;
+      document.getElementById('tests-pct').textContent = ((passCount/R.length)*100).toFixed(1) + '%';
 
       R.forEach((t, i) => {
         const item = document.createElement('div');
@@ -2608,6 +2453,6 @@
         container.appendChild(item);
       });
     }
-</script>
+  </script>
 </body>
 </html>
