@@ -374,13 +374,7 @@
           <span class="badge-tag">По разделам 3 и 4 Памятки</span>
         </div>
         <div class="grid4">
-          <label class="fld"><span>Площадь окраски — способ</span>
-            <select id="paintMode" onchange="onPaintModeChange()">
-              <option value="auto">Авто — все плоскости изделия</option>
-              <option value="manual">Вручную (ввести м²)</option>
-            </select>
-          </label>
-          <label class="fld"><span>Порошковая окраска, м²</span><input type="number" step="0.01" id="paintArea" value="0" readonly style="background:var(--bg)" title="Авто: 2 стороны + торцы"></label>
+          <label class="fld"><span>Порошковая окраска, м²</span><input type="number" step="0.01" id="paintArea" value="0" onchange="calcAll()"></label>
           <label class="fld"><span>Цена окраски, ₽/м²</span><input type="number" id="paintPrice" value="350" onchange="calcAll()"></label>
           <label class="fld">
             <span>Цвет по каталогу RAL</span>
@@ -405,13 +399,7 @@
               <option value="two">С 2-х сторон (+120 ₽/м²)</option>
             </select>
           </label>
-          <label class="fld"><span>Площадь пескоструя — способ</span>
-            <select id="sandMode" onchange="onSandModeChange()">
-              <option value="auto">Авто — все плоскости изделия</option>
-              <option value="manual">Вручную (ввести м²)</option>
-            </select>
-          </label>
-          <label class="fld"><span>Пескоструй, м²</span><input type="number" step="0.01" id="sandArea" value="0" readonly style="background:var(--bg)" title="Авто: 2 стороны + торцы"></label>
+          <label class="fld"><span>Пескоструй, м²</span><input type="number" step="0.01" id="sandArea" value="0" onchange="calcAll()"></label>
           <label class="fld"><span>Пескоструй, ₽/м²</span><input type="number" id="sandPrice" value="280" onchange="calcAll()"></label>
           <label class="fld"><span>Сварка, м</span><input type="number" step="0.1" id="weldM" value="0" onchange="calcAll()"></label>
           <label class="fld"><span>Сварка, ₽/м</span><input type="number" id="weldPrice" value="250" onchange="calcAll()"></label>
@@ -1154,21 +1142,6 @@
       return b4;
     }
 
-    
-    /* ==== Площадь покрытия по всем плоскостям ==== */
-    function fpCoverArea(positions) {
-      var oneSide = 0, edges = 0;
-      positions.forEach(function(p) {
-        var qty = p.q || 1;
-        var thick = (p.t || 1.5) / 1000;
-        oneSide += (p.a || 0) * qty;
-        edges += (p.c || 0) * qty * thick;
-      });
-      return { one: oneSide, two: oneSide * 2, all: oneSide * 2 + edges, edges: edges };
-    }
-    function onPaintModeChange() { calcAll(); }
-    function onSandModeChange() { calcAll(); }
-
     function calcAll() {
       const density = parseFloat(document.getElementById('matDensity')?.value) || 7850;
       const pricePerKg = parseFloat(document.getElementById('matPrice')?.value) || 0;
@@ -1198,15 +1171,7 @@
         if (cell) cell.textContent = rowSum.toFixed(2) + ' ₽';
       });
 
-      const _cvr = fpCoverArea(positions);
-      const paintMode = (document.getElementById('paintMode')?.value) || 'auto';
-      const sandMode  = (document.getElementById('sandMode')?.value)  || 'auto';
-      let paintArea = parseFloat(document.getElementById('paintArea')?.value) || 0;
-      const _pInput = document.getElementById('paintArea');
-      if (paintMode === 'auto') {
-        paintArea = +_cvr.all.toFixed(4);
-        if (_pInput) { _pInput.value = paintArea; _pInput.readOnly = true; _pInput.style.background = 'var(--bg)'; }
-      } else if (_pInput) { _pInput.readOnly = false; _pInput.style.background = ''; }
+      const paintArea = parseFloat(document.getElementById('paintArea')?.value) || 0;
       const paintPrice = parseFloat(document.getElementById('paintPrice')?.value) || 0;
       const paintSum = paintArea * paintPrice;
 
@@ -1214,12 +1179,7 @@
       const filmMult = filmSide === 'two' ? 2 : filmSide === 'one' ? 1 : 0;
       const filmSum = totalArea * filmMult * 60;
 
-      let sandArea = parseFloat(document.getElementById('sandArea')?.value) || 0;
-      const _sInput = document.getElementById('sandArea');
-      if (sandMode === 'auto') {
-        sandArea = +_cvr.all.toFixed(4);
-        if (_sInput) { _sInput.value = sandArea; _sInput.readOnly = true; _sInput.style.background = 'var(--bg)'; }
-      } else if (_sInput) { _sInput.readOnly = false; _sInput.style.background = ''; }
+      const sandArea = parseFloat(document.getElementById('sandArea')?.value) || 0;
       const sandPrice = parseFloat(document.getElementById('sandPrice')?.value) || 0;
       const sandSum = sandArea * sandPrice;
 
