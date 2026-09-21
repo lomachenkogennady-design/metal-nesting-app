@@ -785,94 +785,6 @@
   </div>
 
   <script>
-    
-    /* ==== fpBuildShape: сшивка сегментов DXF в замкнутый контур + holes ==== */
-    function fpBuildShape(segs, circles, w, h) {
-      var contours = [];
-      if (segs && segs.length > 0) {
-        var eps = 0.5;
-        var key = function(x, y) { return Math.round(x/eps) + '_' + Math.round(y/eps); };
-        var used = new Array(segs.length).fill(false);
-        var graph = {};
-        segs.forEach(function(s, i) {
-          var k1 = key(s.x1, s.y1);
-          var k2 = key(s.x2, s.y2);
-          (graph[k1] = graph[k1] || []).push(i);
-          (graph[k2] = graph[k2] || []).push(i);
-        });
-        for (var i = 0; i < segs.length; i++) {
-          if (used[i]) continue;
-          var contour = [];
-          var curPoint = { x: segs[i].x2, y: segs[i].y2 };
-          contour.push({ x: segs[i].x1, y: segs[i].y1 });
-          used[i] = true;
-          var safety = 0;
-          while (safety++ < segs.length + 5) {
-            contour.push({ x: curPoint.x, y: curPoint.y });
-            var k = key(curPoint.x, curPoint.y);
-            var candidates = graph[k] || [];
-            var next = -1;
-            for (var c2 = 0; c2 < candidates.length; c2++) {
-              if (!used[candidates[c2]]) { next = candidates[c2]; break; }
-            }
-            if (next < 0) break;
-            var s2 = segs[next];
-            if (key(s2.x1, s2.y1) === k) {
-              curPoint = { x: s2.x2, y: s2.y2 };
-            } else {
-              curPoint = { x: s2.x1, y: s2.y1 };
-            }
-            used[next] = true;
-          }
-          if (contour.length >= 3) contours.push(contour);
-        }
-      }
-      if (contours.length === 0) {
-        contours.push([
-          { x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }
-        ]);
-      }
-      function polyArea(c) {
-        var s = 0;
-        for (var i = 0; i < c.length; i++) {
-          var a = c[i], b = c[(i+1) % c.length];
-          s += a.x * b.y - b.x * a.y;
-        }
-        return Math.abs(s / 2);
-      }
-      contours.forEach(function(c2) { c2._area = polyArea(c2); });
-      contours.sort(function(a, b) { return b._area - a._area; });
-
-      var outer = contours[0];
-      var shape = new THREE.Shape();
-      shape.moveTo(outer[0].x - w/2, outer[0].y - h/2);
-      for (var i = 1; i < outer.length; i++) {
-        shape.lineTo(outer[i].x - w/2, outer[i].y - h/2);
-      }
-      shape.closePath();
-
-      for (var k = 1; k < contours.length; k++) {
-        var hc = contours[k];
-        var holePath = new THREE.Path();
-        holePath.moveTo(hc[0].x - w/2, hc[0].y - h/2);
-        for (var j = 1; j < hc.length; j++) {
-          holePath.lineTo(hc[j].x - w/2, hc[j].y - h/2);
-        }
-        holePath.closePath();
-        shape.holes.push(holePath);
-      }
-
-      if (circles && circles.length > 0) {
-        circles.forEach(function(c3) {
-          var hp = new THREE.Path();
-          hp.absarc(c3.cx - w/2, c3.cy - h/2, Math.max(0.5, c3.r), 0, Math.PI*2, true);
-          shape.holes.push(hp);
-        });
-      }
-
-      return shape;
-    }
-
     /* ====================================================================
        ЛОГИКА АВТОНОМНОГО ПРИЛОЖЕНИЯ ФАЙЕРПРОМ (V3 ROBUST)
        ==================================================================== */
@@ -1681,8 +1593,29 @@
 
       if (pmThreeMesh) pmThreeScene.remove(pmThreeMesh);
 
+      const shape = new THREE.Shape();
       const w = pos.w, h = pos.h;
-      const shape = fpBuildShape(pos.segs, pos.circles, w, h);
+      if (pos.segs && pos.segs.length >= 3) {
+        shape.moveTo(pos.segs[0].x1 - w/2, pos.segs[0].y1 - h/2);
+        for (let i = 0; i < pos.segs.length; i++) {
+          shape.lineTo(pos.segs[i].x2 - w/2, pos.segs[i].y2 - h/2);
+        }
+        shape.closePath();
+      } else {
+        shape.moveTo(-w/2, -h/2);
+        shape.lineTo(w/2, -h/2);
+        shape.lineTo(w/2, h/2);
+        shape.lineTo(-w/2, h/2);
+        shape.closePath();
+      }
+
+      if (pos.circles && pos.circles.length > 0) {
+        pos.circles.forEach(c => {
+          const hole = new THREE.Path();
+          hole.absarc(c.cx - w/2, c.cy - h/2, Math.max(0.5, c.r), 0, Math.PI*2, true);
+          shape.holes.push(hole);
+        });
+      }
 
       const geom = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.5, pos.t), bevelEnabled: false, curveSegments: 24 });
       geom.center();
@@ -2413,8 +2346,30 @@
       if (!threeScene) return;
       if (threeMesh) threeScene.remove(threeMesh);
 
+      const shape = new THREE.Shape();
       const w = part.w, h = part.h;
-      const shape = fpBuildShape(part.segs, part.circles, w, h);
+
+      if (part.segs && part.segs.length >= 3) {
+        shape.moveTo(part.segs[0].x1 - w/2, part.segs[0].y1 - h/2);
+        for (let i = 0; i < part.segs.length; i++) {
+          shape.lineTo(part.segs[i].x2 - w/2, part.segs[i].y2 - h/2);
+        }
+        shape.closePath();
+      } else {
+        shape.moveTo(-w/2, -h/2);
+        shape.lineTo(w/2, -h/2);
+        shape.lineTo(w/2, h/2);
+        shape.lineTo(-w/2, h/2);
+        shape.closePath();
+      }
+
+      if (part.circles && part.circles.length > 0) {
+        part.circles.forEach(c => {
+          const hole = new THREE.Path();
+          hole.absarc(c.cx - w/2, c.cy - h/2, Math.max(0.5, c.r), 0, Math.PI*2, true);
+          shape.holes.push(hole);
+        });
+      }
 
       const geom = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false, curveSegments: 24 });
       geom.center();
