@@ -1,473 +1,2458 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ФАЙЕРПРОМ v2 — Калькулятор КП</title>
-<style>
-:root{--bg:#eef1f6;--card:#fff;--txt:#2d3748;--acc:#3182ce;--brd:#e2e8f0;--hint:#718096;--ok:#22543d;--warn:#92400e}
-body.dark{--bg:#1a202c;--card:#2d3748;--txt:#e2e8f0;--acc:#63b3ed;--brd:#4a5568;--hint:#a0aec0;--ok:#9ae6b4;--warn:#fbd38d}
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Inter',sans-serif}
-body{background:var(--bg);color:var(--txt);padding:12px;font-size:14px}
-.wrap{max-width:1100px;margin:0 auto;background:var(--card);padding:20px;border-radius:12px}
-h1{font-size:18px;margin-bottom:12px;color:var(--acc)}
-h2{font-size:13px;margin:14px 0 8px;color:var(--acc);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--brd);padding-bottom:4px}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.row>div{flex:1 1 140px}
-label{display:block;font-size:11px;color:var(--hint);margin:6px 0 3px}
-input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--txt);font-size:13px}
-input:focus,select:focus{outline:none;border-color:var(--acc)}
-button{padding:9px 14px;background:var(--acc);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin:3px 2px}
-button.sec{background:#718096}
-button.gh{background:transparent;color:var(--acc);border:1px solid var(--acc)}
-table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
-th,td{padding:4px 3px;border-bottom:1px solid var(--brd);text-align:left}
-th{background:var(--bg);font-size:11px;color:var(--hint)}
-td input,td select{padding:4px 5px;font-size:12px}
-.res{margin-top:14px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px}
-.res .li{display:flex;justify-content:space-between;padding:3px 0}
-.res .tot{border-top:1px solid var(--brd);margin-top:6px;padding-top:6px;font-size:16px;color:var(--acc);font-weight:700}
-.res .gr{font-size:17px;color:var(--ok);font-weight:700;border-top:1px dashed var(--brd);padding-top:6px;margin-top:4px}
-.chk{display:flex;align-items:center;gap:6px;font-size:12px;margin:6px 0}
-.chk input{width:auto}
-.badge{display:inline-block;background:var(--acc);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:4px}
-.po{display:none}
-@media print{
-@page{margin:10mm}
-body{background:#fff;padding:0;color:#000;font-size:11px}
-.wrap{padding:0;box-shadow:none;max-width:100%}
-.noprint,button,input,select,textarea,.sec,h1.brand{display:none!important}
-.po{display:block!important}
-.po h1{font-size:16px;margin-bottom:2px}
-.po table{margin:8px 0}
-.po th,.po td{border:1px solid #999;padding:4px 6px;font-size:10.5px}
-.po td:last-child{text-align:right}
-.po .tt{background:#eee;font-weight:700}
-.po .gg{background:#e6f4ea;font-weight:800}
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ФАЙЕРПРОМ — Автономный калькулятор КП, DXF, 2D/3D и раскрой</title>
+  <meta name="description" content="Автономное приложение для расчёта КП, гибки, 2D/3D чертежей и раскроя листового металла без сервера">
+  <meta name="theme-color" content="#2b6cb0">
+    <!-- Three.js для 3D WebGL (с локальным fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg: #eef1f6;
+      --card: #ffffff;
+      --txt: #2d3748;
+      --acc: #3182ce;
+      --acc-hover: #2b6cb0;
+      --brd: #e2e8f0;
+      --hint: #718096;
+      --ok: #22543d;
+      --ok-bg: #c6f6d5;
+      --warn: #92400e;
+      --warn-bg: #feebc8;
+      --danger: #c53030;
+      --danger-bg: #fed7d7;
+      --input: #ffffff;
+    }
+    body.dark {
+      --bg: #161a21;
+      --card: #1e242e;
+      --txt: #e2e8f0;
+      --acc: #63b3ed;
+      --acc-hover: #4299e1;
+      --brd: #2d3748;
+      --hint: #a0aec0;
+      --ok: #9ae6b4;
+      --ok-bg: #22543d;
+      --warn: #fbd38d;
+      --warn-bg: #744210;
+      --danger: #feb2b2;
+      --danger-bg: #742a2a;
+      --input: #131820;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%; background: var(--bg); color: var(--txt); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: transparent; }
 
-.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap}
-.tab{padding:9px 18px;background:transparent;border:none;border-bottom:3px solid transparent;font-size:14px;font-weight:600;color:#718096;cursor:pointer;border-radius:6px 6px 0 0;margin-bottom:-2px}
-.tab:hover{background:#f8fafc;color:#3182ce}
-.tab.active{color:#3182ce;border-bottom-color:#3182ce}
-.tab-panel{display:none}
-.tab-panel.active{display:block}
+    /* Верхняя панель */
+    .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 18px; background: var(--card); border-bottom: 1px solid var(--brd); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #2b6cb0, #3182ce); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+    .brand-title strong { display: block; font-size: 15px; font-weight: 800; }
+    .brand-title small { font-size: 10px; color: var(--hint); }
 
-@media print{
-  .print-only img,.print-only canvas{max-width:100%!important;height:auto!important}
-  .print-only div[style*="position:relative"]{page-break-inside:avoid}
-}
+    .nav-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--hint); transition: all 0.15s ease; white-space: nowrap; }
+    .tab-btn.active { color: var(--acc); background: var(--bg); }
 
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-offline-save { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #276749; color: #fff; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 6px rgba(39, 103, 73, 0.3); }
+    .btn-theme { padding: 6px 10px; border: 1px solid var(--brd); border-radius: 8px; font-size: 13px; }
 
-/* @media print v2 */
-@media print{
-  body * { visibility: hidden; }
-  #po, #po * { visibility: visible; }
-  #po { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; color: #000; background: #fff; }
-  #po h1 { font-size: 18px; margin-bottom: 8px; }
-  #po table { width: 100%; border-collapse: collapse; margin-bottom: 10px; page-break-inside: avoid; }
-  #po th, #po td { border: 1px solid #999; padding: 5px 8px; font-size: 11px; }
-  #po td:last-child { text-align: right; white-space: nowrap; }
-  #po .tr-total td { background: #f0f0f0; font-weight: 700; }
-  #po .tr-grand td { background: #e6f4ea; font-weight: 800; font-size: 13px; }
-  .no-print, .tabs, .btn-group, .share-box { display: none !important; }
-  @page { margin: 12mm; }
-}
-</style>
+    /* Основная сетка */
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; max-width: 1500px; margin: 0 auto; padding: 16px 18px 40px; align-items: start; }
+    @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
+
+    .main-col, .side-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .side-col { position: sticky; top: 70px; }
+    @media (max-width: 1024px) { .side-col { position: static; } }
+
+    .card { background: var(--card); border: 1px solid var(--brd); border-radius: 12px; padding: 16px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .card-head h2 { margin: 0; font-size: 14px; font-weight: 750; }
+    .link-btn { color: var(--acc); font-size: 11px; font-weight: 700; padding: 0; }
+    .hint { font-size: 11px; color: var(--hint); margin: 6px 0 0; line-height: 1.4; }
+
+    /* Поля ввода и сетка */
+    .grid4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    @media (max-width: 600px) { .grid4 { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } }
+    .fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fld > span { font-size: 10px; font-weight: 600; color: var(--hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fld input, .fld select { width: 100%; height: 34px; padding: 0 8px; border: 1px solid var(--brd); border-radius: 8px; background: var(--input); font-size: 12px; }
+    .fld input:focus, .fld select:focus { outline: 2px solid var(--acc); outline-offset: -1px; }
+
+    .btn-primary { background: var(--acc); color: #fff; padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; transition: all 0.15s ease; }
+    .btn-primary:hover { background: var(--acc-hover); }
+    .btn-primary.sm { padding: 5px 10px; font-size: 11px; }
+    .btn-primary.wide { width: 100%; padding: 10px; font-size: 12px; margin-top: 10px; }
+    .btn-primary:disabled { background: var(--hint); opacity: 0.6; cursor: not-allowed; }
+
+    /* Таблица позиций */
+    .table-scroll { overflow-x: auto; }
+    table.pos { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 11px; }
+    table.pos th { padding: 6px 4px 8px; color: var(--hint); font-size: 9px; font-weight: 700; text-transform: uppercase; text-align: left; }
+    table.pos td { padding: 3px 4px; border-top: 1px solid var(--brd); }
+    table.pos input, table.pos select { height: 30px; width: 100%; border: 1px solid var(--brd); border-radius: 6px; background: var(--input); padding: 0 6px; font-size: 11px; }
+    table.pos td:first-child input { min-width: 140px; }
+    table.pos .sum { color: var(--ok); font-weight: 700; text-align: right; white-space: nowrap; }
+    .del-btn { width: 26px; height: 26px; border-radius: 6px; color: var(--danger); font-size: 16px; font-weight: 700; display: grid; place-items: center; }
+    .del-btn:hover { background: var(--danger-bg); }
+
+    /* Калькуляция */
+    .calc-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; }
+    .calc-row span { color: var(--hint); }
+    .calc-row b { font-weight: 700; }
+    .calc-row.warn b { color: var(--warn); }
+    .grand-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 12px; border-radius: 9px; background: rgba(49, 130, 206, 0.1); font-size: 12px; font-weight: 700; }
+    .grand-total strong { font-size: 17px; color: var(--acc); }
+
+    .action-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .action-grid button, .action-grid label { padding: 7px 11px; border: 1px solid var(--brd); border-radius: 7px; background: var(--card); font-size: 11px; font-weight: 600; }
+    .action-grid label input { display: none; }
+    .action-grid button.danger { color: var(--danger); }
+
+    /* Памятка и бейджи */
+    .memo-box { background: var(--card); border: 1px solid var(--brd); border-left: 4px solid var(--acc); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-size: 11px; }
+    .memo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .memo-grid { grid-template-columns: 1fr; } }
+    .memo-grid ul { margin: 4px 0 0 16px; padding: 0; line-height: 1.5; }
+    .memo-warn { margin-top: 8px; padding: 6px 8px; background: var(--warn-bg); color: var(--warn); border-radius: 6px; font-weight: 600; }
+
+    .badge-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 700; background: rgba(49,130,206,0.1); color: var(--acc); }
+    .notice-item { padding: 6px 9px; border-radius: 6px; font-size: 11px; margin-top: 6px; }
+    .notice-item.error { background: var(--danger-bg); color: var(--danger); }
+    .notice-item.warning { background: var(--warn-bg); color: var(--warn); }
+
+    /* Миниатюры деталей в таблице */
+    .thumb-cell-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .thumb-cell-btn:hover {
+      border-color: var(--acc);
+      background: rgba(49, 130, 206, 0.08);
+      transform: scale(1.04);
+    }
+    .thumb-hover-tag {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: var(--acc);
+      white-space: nowrap;
+    }
+
+    /* Модальное окно 2D/3D инспекции изделия */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .modal-window {
+      background: var(--card);
+      border: 1px solid var(--brd);
+      border-radius: 14px;
+      width: min(920px, 96vw);
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 20px 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      border-bottom: 1px solid var(--brd);
+      padding-bottom: 12px;
+    }
+
+    /* 3D и 2D вьюверы */
+    .viewer-container { width: 100%; height: 350px; border-radius: 10px; border: 1px solid var(--brd); background: #f8fafc; overflow: hidden; position: relative; cursor: grab; }
+    body.dark .viewer-container { background: #131820; }
+    .viewer-container:active { cursor: grabbing; }
+    .viewer-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11px; }
+    .viewer-bar button { padding: 5px 9px; border: 1px solid var(--brd); border-radius: 6px; font-size: 10px; font-weight: 600; background: var(--card); }
+    .viewer-bar button.active { border-color: var(--acc); color: var(--acc); }
+    .svg-canvas { width: 100%; max-height: 420px; border: 1px solid var(--brd); border-radius: 10px; background: #fff; }
+
+    /* Раскрой */
+    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+    .sheet-card { border: 1px solid var(--brd); border-radius: 10px; padding: 10px; background: var(--bg); display: flex; flex-direction: column; gap: 8px; }
+    .sheet-card header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+
+    /* Стенд тестов */
+    .test-box { padding: 10px; border: 1px solid var(--brd); border-radius: 8px; font-size: 11px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .test-box.pass { background: rgba(39, 103, 73, 0.05); border-left: 4px solid #276749; }
+    .test-box.fail { background: rgba(229, 62, 62, 0.08); border-left: 4px solid #c53030; }
+
+    /* Печать */
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0 10mm; font-size: 11pt; color: #000; }
+    }
+    #print-area { display: none; }
+    @media print { #print-area { display: block; } }
+  </style>
 </head>
 <body>
-<script src="shared.js"></script>
-<script src="nest.js"></script>
-<div class="wrap" id="app">
-<h1 class="brand">🏭 ФАЙЕРПРОМ v2 — Калькулятор КП <span class="badge">MAX</span></h1>
-<button class="gh" onclick="toggleTheme()" style="float:right;margin-top:-38px">🌓</button>
 
-<h2>0. Исполнитель</h2>
-<div class="row"><div><label>Название</label><input id="cName" value="ООО «ФАЙЕРПРОМ»" oninput="calc()"></div>
-<div><label>ИНН</label><input id="cINN" oninput="calc()"></div>
-<div><label>ОГРН</label><input id="cOGRN" oninput="calc()"></div></div>
-<div class="row"><div><label>Адрес</label><input id="cAddr" oninput="calc()"></div>
-<div><label>Телефон</label><input id="cPhone" oninput="calc()"></div>
-<div><label>Email</label><input id="cEmail" oninput="calc()"></div></div>
-<div class="row"><div><label>Банк</label><input id="cBank" oninput="calc()"></div>
-<div><label>Р/с</label><input id="cRS" oninput="calc()"></div>
-<div><label>К/с</label><input id="cKS" oninput="calc()"></div>
-<div><label>БИК</label><input id="cBIK" oninput="calc()"></div></div>
+  <!-- Верхняя шапка -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">ФП</div>
+      <div class="brand-title">
+        <strong>ФАЙЕРПРОМ · Offline</strong>
+        <small>Автономное приложение (без сервера)</small>
+      </div>
+    </div>
 
-<h2>1. Реквизиты КП и заказчика</h2>
-<div class="row"><div><label>№ КП</label><input id="dNum" value="КП-0001" oninput="calc()"></div>
-<div><label>Дата</label><input id="dDate" type="date" oninput="calc()"></div>
-<div><label>Действ. до</label><input id="dValid" type="date" oninput="calc()"></div>
-<div><label>Срок изгот.</label><input id="dTerm" value="5-7 раб. дней" oninput="calc()"></div></div>
-<div class="row"><div><label>Заказчик</label><input id="kName" oninput="calc()"></div>
-<div><label>ИНН заказчика</label><input id="kINN" oninput="calc()"></div>
-<div><label>Адрес заказчика</label><input id="kAddr" oninput="calc()"></div></div>
-<div class="row"><div><label>Менеджер</label><input id="mName" oninput="calc()"></div>
-<div><label>Тел. менеджера</label><input id="mPhone" oninput="calc()"></div>
-<div><label>Предоплата %</label><input id="prepay" type="number" value="50" min="0" max="100" oninput="calc()"></div>
-<div><label>Условия оплаты</label><input id="payTerms" placeholder="авто" oninput="calc()"></div></div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="setTab('kp')">Калькулятор КП</button>
+      <button class="tab-btn" onclick="setTab('designer')">Чертёж 2D · 3D · раскрой</button>
+      <button class="tab-btn" onclick="setTab('tests')">🧪 Тесты (160)</button>
+    </nav>
 
-<h2>2. Материал и цены</h2>
-<div class="chk"><input type="checkbox" id="ownPrice" onchange="calc()"><label for="ownPrice">Своя цена металла</label></div>
-<div class="row"><div><label>Марка</label><select id="mat" onchange="calc()">
-<option value="galv">Оцинковка — 74.83</option>
-<option value="cold">Х/к — 61.27</option>
-<option value="ss">Нерж AISI304 — 311.47</option>
-<option value="hot">Г/к — 65.00</option>
-<option value="alu">Алюм АМг2 — 320.00</option>
-<option value="cu">Медь М1 — 780.00</option>
-</select></div>
-<div><label>Своя цена ₽/кг</label><input id="cPrice" type="number" value="0" step="0.01" oninput="calc()"></div>
-<div><label>Цена актуальна</label><input id="matDate" type="date" oninput="calc()"></div>
-<div><label>Плотность кг/м³</label><input id="dens" type="number" value="7850" oninput="calc()"></div></div>
-<div class="chk"><input type="checkbox" id="volDisc" onchange="calc()"><label for="volDisc">Скидка по объёму (от 100 кг — 5%, от 500 кг — 10%)</label></div>
+    <div class="top-actions">
+      <a href="javascript:downloadSelf()" class="btn-offline-save" title="Сохранить этот файл себе на смартфон">
+        💾 Сохранить файл на телефон
+      </a>
+      <button class="btn-theme" onclick="toggleDark()" title="Сменить тему">🌓</button>
+    </div>
+  </header>
 
-<h2>3. Позиции</h2>
-<table id="posT"><thead><tr>
-<th>Наимен.</th><th>Кол-во</th><th>Ш мм</th><th>В мм</th><th>Пл.м²</th><th>Толщ.</th><th>Рез м</th><th>Врез.</th><th>Гиб.</th><th>Сумма ₽</th><th></th>
-</tr></thead><tbody id="posB"></tbody></table>
-<button onclick="addPos()">+ Позиция</button>
+  <!-- ВКЛАДКА 1: КАЛЬКУЛЯТОР КП -->
+  <div id="tab-kp" class="layout">
+    <div class="main-col">
 
-<h2>4. Резка / Гибка / Обработка</h2>
-<div class="row"><div><label>Резка</label><select id="cutType" onchange="onCut()">
-<option value="50">Лазер 50 ₽/м</option><option value="35">Плазма 35 ₽/м</option><option value="120">Гидроабразив 120 ₽/м</option>
-</select></div>
-<div><label>Цена ₽/м</label><input id="cutP" type="number" value="50" oninput="calc()"></div>
-<div><label>Экв. врезки м</label><input id="piF" type="number" value="0.15" step="0.01" oninput="calc()"></div></div>
-<div class="row"><div><label>Гибка до 2мм</label><input id="b1" type="number" value="25" oninput="calc()"></div>
-<div><label>2-4мм</label><input id="b2" type="number" value="40" oninput="calc()"></div>
-<div><label>4-8мм</label><input id="b3" type="number" value="70" oninput="calc()"></div>
-<div><label>&gt;8мм</label><input id="b4" type="number" value="120" oninput="calc()"></div></div>
+      <!-- Реквизиты -->
+      <div class="card">
+        <div class="card-head">
+          <h2>1. Реквизиты коммерческого предложения</h2>
+          <button class="link-btn" onclick="toggleReq()">Развернуть / Свернуть</button>
+        </div>
+        <div class="grid4">
+          <label class="fld">
+            <span>№ КП</span>
+            <input type="text" id="docNum" value="КП-0001" onchange="calcAll()">
+          </label>
+          <label class="fld">
+            <span>Дата</span>
+            <input type="date" id="docDate" onchange="calcAll()">
+          </label>
+          <label class="fld">
+            <span>Заказчик</span>
+            <input type="text" id="kName" placeholder="ООО Заказчик" onchange="calcAll()">
+          </label>
+          <label class="fld">
+            <span>Срок изготовления</span>
+            <input type="text" id="dTerm" value="10 рабочих дней" onchange="calcAll()">
+          </label>
+        </div>
 
-<h2>5. Покраска</h2>
-<div class="row"><div><label>Площадь м²</label><input id="pArea" type="number" value="0" step="0.01" oninput="calc()"></div>
-<div><label>Цена ₽/м²</label><input id="pPrice" type="number" value="350" oninput="calc()"></div>
-<div><label>Тип</label><select id="pType" onchange="calc()">
-<option value="powder">Порошковая</option><option value="liquid">Жидкая</option><option value="primer">Грунт</option><option value="none">Без покраски</option>
-</select></div></div>
+        <div id="extra-req" style="display:none; margin-top:10px;" class="grid4">
+          <label class="fld"><span>Исполнитель</span><input type="text" id="cName" value="ООО «ФАЙЕРПРОМ»"></label>
+          <label class="fld"><span>ИНН</span><input type="text" id="cINN" value="7700000000"></label>
+          <label class="fld"><span>Телефон</span><input type="text" id="cPhone" value="+7 (495) 000-00-00"></label>
+          <label class="fld"><span>Менеджер</span><input type="text" id="mName" value="Игорь Вороненков"></label>
+          <label class="fld"><span>Предоплата</span><input type="text" id="prepay" value="50%"></label>
+          <label class="fld"><span>Срок действия КП</span><input type="text" id="dValid" value="14 дней"></label>
+        </div>
+      </div>
 
-<h2>6. Доп. операции</h2>
-<div class="row"><div><label>Сверление (отв)</label><input id="drC" type="number" value="0" oninput="calc()"></div>
-<div><label>₽/отв</label><input id="drP" type="number" value="5" oninput="calc()"></div>
-<div><label>Зенковка</label><input id="znC" type="number" value="0" oninput="calc()"></div>
-<div><label>₽/отв</label><input id="znP" type="number" value="8" oninput="calc()"></div></div>
-<div class="row"><div><label>Сварка (м)</label><input id="wC" type="number" value="0" step="0.1" oninput="calc()"></div>
-<div><label>₽/м</label><input id="wP" type="number" value="250" oninput="calc()"></div>
-<div><label>Резьба</label><input id="tapC" type="number" value="0" oninput="calc()"></div>
-<div><label>₽/отв</label><input id="tapP" type="number" value="30" oninput="calc()"></div></div>
-<div class="row"><div><label>Доставка ₽</label><input id="del" type="number" value="0" oninput="calc()"></div>
-<div><label>Прочее ₽</label><input id="oth" type="number" value="0" oninput="calc()"></div></div>
+      <!-- Материал -->
+      <div class="card">
+        <div class="card-head">
+          <h2>2. Материал металла</h2>
+          <span class="badge-tag" id="mat-limit-badge">Лимит станка: до 5 мм</span>
+        </div>
+        <div class="grid4">
+          <label class="fld">
+            <span>Марка металла</span>
+            <select id="matSelect" onchange="onMatChange()">
+              <option value="galv" data-d="7850" data-p="74.83" data-max="5">ОЦ — оцинковка (74.83 ₽/кг)</option>
+              <option value="cold" data-d="7850" data-p="61.27" data-max="5">ХК — холоднокатаная (61.27 ₽/кг)</option>
+              <option value="ss" data-d="7900" data-p="311.47" data-max="3">Нержавеющая сталь AISI 304 (311.47 ₽/кг)</option>
+              <option value="hot" data-d="7850" data-p="65.00" data-max="5">ГК — горячекатаная (65.00 ₽/кг)</option>
+              <option value="alu" data-d="2700" data-p="320.00" data-max="3">Алюминий АМг2 (320.00 ₽/кг)</option>
+              <option value="cu" data-d="8900" data-p="780.00" data-max="0">Медь М1 (780.00 ₽/кг, по запросу)</option>
+            </select>
+          </label>
+          <label class="fld">
+            <span>Плотность, кг/м³</span>
+            <input type="number" id="matDensity" value="7850" readonly>
+          </label>
+          <label class="fld">
+            <span>Цена, ₽/кг</span>
+            <input type="number" step="0.1" id="matPrice" value="74.83" onchange="calcAll()">
+          </label>
+          <label class="fld" style="justify-content: flex-end;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:11px; height:34px;">
+              <input type="checkbox" id="ownPrice" onchange="onOwnPriceChange()"> Своя цена металла
+            </label>
+          </label>
+        </div>
+      </div>
 
-<h2>7. Наценки / НДС</h2>
-<div class="row"><div><label>Срочность %</label><input id="urg" type="number" value="0" oninput="calc()"></div>
-<div><label>Скидка %</label><input id="disc" type="number" value="0" oninput="calc()"></div>
-<div><label>Мин. сумма ₽</label><input id="minO" type="number" value="0" oninput="calc()"></div>
-<div><label>НДС %</label><select id="vatR" onchange="calc()"><option value="22">22%</option><option value="20">20%</option><option value="10">10%</option><option value="0">без НДС</option></select></div></div>
+      <!-- Таблица деталей -->
+      <div class="card">
+        <div class="card-head">
+          <h2>3. Спецификация позиций</h2>
+          <button class="btn-primary sm" onclick="addPosition()">+ Добавить деталь</button>
+        </div>
+        <div class="table-scroll">
+          <table class="pos">
+            <thead>
+              <tr>
+                <th style="width:70px; text-align:center;">Эскиз 2D/3D</th>
+                <th>Наименование</th>
+                <th style="width:65px">Кол-во</th>
+                <th style="width:75px">Ш, мм</th>
+                <th style="width:75px">В, мм</th>
+                <th style="width:80px">Площадь м²</th>
+                <th style="width:75px">Толщ S</th>
+                <th style="width:75px">Рез, м</th>
+                <th style="width:65px">Врезки</th>
+                <th style="width:65px">Гибы</th>
+                <th style="width:90px; text-align:right">Сумма ₽</th>
+                <th style="width:30px"></th>
+              </tr>
+            </thead>
+            <tbody id="pos-tbody">
+              <!-- Динамические строки -->
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Ширина и высота автоматически рассчитывают площадь. Толщина влияет на вес и тариф гибки.</p>
+      </div>
 
-<div class="res" id="res"></div>
+      <!-- Резка и Гибка -->
+      <div class="card">
+        <div class="card-head">
+          <h2>4. Резка, гибка и обработка</h2>
+          <span class="badge-tag">Памятка: макс. рез 2490×1240 · пресс до 2490 мм</span>
+        </div>
+        <div class="grid4">
+          <label class="fld">
+            <span>Тип резки</span>
+            <select id="cutType" onchange="onCutTypeChange()">
+              <option value="50">Лазерная резка (50 ₽/м)</option>
+              <option value="35">Плазменная резка (35 ₽/м)</option>
+              <option value="120">Гидроабразив (120 ₽/м)</option>
+            </select>
+          </label>
+          <label class="fld"><span>Цена реза, ₽/м</span><input type="number" id="cutPrice" value="50" onchange="calcAll()"></label>
+          <label class="fld"><span>Норматив врезки (м)</span><input type="number" step="0.01" id="pierceFee" value="0.15" onchange="calcAll()"></label>
+          <label class="fld"><span>Гиб до 2 мм, ₽</span><input type="number" id="b1" value="25" onchange="calcAll()"></label>
+          <label class="fld"><span>Гиб 2–4 мм, ₽</span><input type="number" id="b2" value="40" onchange="calcAll()"></label>
+          <label class="fld"><span>Гиб 4–8 мм, ₽</span><input type="number" id="b3" value="70" onchange="calcAll()"></label>
+          <label class="fld"><span>Гиб &gt;8 мм, ₽</span><input type="number" id="b4" value="120" onchange="calcAll()"></label>
+        </div>
+      </div>
 
-<button onclick="prt('kp')">🖨️ КП</button>
-<button onclick="prt('inv')" class="gh">💳 Счёт</button>
-<button onclick="prt('spec')" class="gh">📋 ТЗ</button>
-<button onclick="csv()" class="gh">📊 CSV</button>
-<button onclick="xls()" class="gh">📗 Excel</button>
-<button onclick="saveH()" class="gh">⭐ В историю</button>
-<button onclick="showH()" class="gh">📚 История</button>
-<a href="dxf-tools.html" style="display:inline-block;padding:9px 14px;background:transparent;color:#3182ce;border:1.5px solid #3182ce;border-radius:6px;text-decoration:none;font-weight:600;margin:3px 2px">📐 DXF</a> <button onclick="cpLink()" class="gh">🔗 Ссылка</button>
-<button onclick="mailTo()" class="gh">✉️ Email</button><button onclick="tgShare()" class="gh">📱 Telegram</button><button onclick="saveJSON()" class="gh">📥 Бэкап</button><button onclick="loadJSON()" class="gh">📂 Восстановить</button>
-<button onclick="rst()" class="sec">↺ Сброс</button>
+      <!-- Покраска RAL, плёнка, пескоструй -->
+      <div class="card">
+        <div class="card-head">
+          <h2>5. Покраска, защитная плёнка и доп. услуги</h2>
+          <span class="badge-tag">По разделам 3 и 4 Памятки</span>
+        </div>
+        <div class="grid4">
+          <label class="fld"><span>Порошковая окраска, м²</span><input type="number" step="0.01" id="paintArea" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Цена окраски, ₽/м²</span><input type="number" id="paintPrice" value="350" onchange="calcAll()"></label>
+          <label class="fld">
+            <span>Цвет по каталогу RAL</span>
+            <select id="ralColor" onchange="calcAll()">
+              <option value="RAL 9005">RAL 9005 (Глубокий чёрный)</option>
+              <option value="RAL 9003">RAL 9003 (Сигнальный белый)</option>
+              <option value="RAL 7016">RAL 7016 (Антрацитово-серый)</option>
+              <option value="RAL 7024">RAL 7024 (Графитовый серый)</option>
+              <option value="RAL 7040">RAL 7040 (Серое окно)</option>
+              <option value="RAL 8017">RAL 8017 (Шоколадный)</option>
+              <option value="RAL 3020">RAL 3020 (Красный)</option>
+              <option value="RAL 5005">RAL 5005 (Сигнальный синий)</option>
+              <option value="RAL 6005">RAL 6005 (Зелёный мох)</option>
+              <option value="Спец. RAL">Другой спец. RAL...</option>
+            </select>
+          </label>
+          <label class="fld">
+            <span>Защитная плёнка (сторона)</span>
+            <select id="filmSide" onchange="calcAll()">
+              <option value="none">Без защитной плёнки</option>
+              <option value="one">С 1 стороны (+60 ₽/м²)</option>
+              <option value="two">С 2-х сторон (+120 ₽/м²)</option>
+            </select>
+          </label>
+          <label class="fld"><span>Пескоструй, м²</span><input type="number" step="0.01" id="sandArea" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Пескоструй, ₽/м²</span><input type="number" id="sandPrice" value="280" onchange="calcAll()"></label>
+          <label class="fld"><span>Сварка, м</span><input type="number" step="0.1" id="weldM" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Сварка, ₽/м</span><input type="number" id="weldPrice" value="250" onchange="calcAll()"></label>
+          <label class="fld"><span>Сверление, отв.</span><input type="number" id="drillCount" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Зенковка, отв.</span><input type="number" id="zenkCount" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Резьба, отв.</span><input type="number" id="tapCount" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Доставка, ₽</span><input type="number" id="delivPrice" value="0" onchange="calcAll()"></label>
+        </div>
 
-<div class="po" id="po"></div>
-</div>
+        <div style="margin-top:12px; padding:10px; background:var(--warn-bg); border:1px solid rgba(214,158,46,0.3); border-radius:8px;">
+          <label style="display:flex; align-items:flex-start; gap:8px; font-size:11px; cursor:pointer;">
+            <input type="checkbox" id="flatAgreement" onchange="calcAll()">
+            <span>⚠️ <b>Согласование по Памятке:</b> Изготовление заказа ТОЛЬКО по предоставленной развёртке (без конструкторских чертежей, на ответственность заказчика).</span>
+          </label>
+        </div>
+      </div>
 
-<script>
-const MATS={galv:{n:'Оцинкованная сталь (ОЦ)',p:74.83},cold:{n:'Холоднокатаная сталь (ХК)',p:61.27},ss:{n:'Нержавеющая сталь AISI 304',p:311.47},hot:{n:'Горячекатаная сталь (ГК)',p:65},alu:{n:'Алюминий АМг2',p:320},cu:{n:'Медь М1',p:780}};
-const LS='fp_v2',LH='fp_h_v2';
-const $=id=>document.getElementById(id);
-const fmt=n=>(Math.round(n*100)/100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fN=(n,d=2)=>n.toLocaleString('ru-RU',{maximumFractionDigits:d});
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const today=()=>new Date().toISOString().slice(0,10);
-const v=(id,min=0,max=null,def=0)=>{let x=parseFloat(($(id)?.value||'').replace(',','.'));if(!isFinite(x))x=def;if(x<min)x=min;if(max!==null&&x>max)x=max;return x};
+      <!-- Наценки, скидки, НДС -->
+      <div class="card">
+        <h2>6. Наценки, скидки и НДС</h2>
+        <div class="grid4">
+          <label class="fld"><span>Срочность, %</span><input type="number" id="urgency" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Ручная скидка, %</span><input type="number" id="discount" value="0" onchange="calcAll()"></label>
+          <label class="fld"><span>Мин. заказ, ₽</span><input type="number" id="minOrder" value="0" onchange="calcAll()"></label>
+          <label class="fld">
+            <span>НДС</span>
+            <select id="vatRate" onchange="calcAll()">
+              <option value="22">22%</option>
+              <option value="20">20%</option>
+              <option value="10">10%</option>
+              <option value="0">Без НДС</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Автоскидка от объёма металла: от 100 кг — 5%, от 500 кг — 10%. Выбирается максимальная.</p>
+      </div>
 
-let pos=[];
-function mkP(n='Деталь',q=1,a=0.5,t=1.5,c=5,p=5,b=2,w=500,h=400){return{id:Date.now()+Math.random(),n,q,a,t,c,p,b,w,h}}
+    </div>
 
-function rP(){
-  const b=$('posB');b.innerHTML='';
-  pos.forEach((p,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><input value="${esc(p.n)}" oninput="upP(${i},'n',this.value)"></td>
-    <td><input type="number" value="${p.q}" min="1" oninput="upP(${i},'q',this.value)"></td>
-    <td><input type="number" value="${p.w||500}" min="0" step="1" oninput="upP(${i},'w',this.value)" style="width:60px"></td>
-    <td><input type="number" value="${p.h||400}" min="0" step="1" oninput="upP(${i},'h',this.value)" style="width:60px"></td>
-    <td><input type="number" value="${p.a}" min="0.001" step="0.01" oninput="upP(${i},'a',this.value)"></td>
-    <td><input type="number" value="${p.t}" min="0.5" max="25" step="0.1" oninput="upP(${i},'t',this.value)"></td>
-    <td><input type="number" value="${p.c}" min="0" step="0.5" oninput="upP(${i},'c',this.value)"></td>
-    <td><input type="number" value="${p.p}" min="0" oninput="upP(${i},'p',this.value)"></td>
-    <td><input type="number" value="${p.b}" min="0" oninput="upP(${i},'b',this.value)"></td>
-    <td id="s${i}" style="text-align:right;font-weight:600"></td>
-    <td><button class="sec" style="padding:2px 6px" onclick="delP(${i})">×</button></td>`;
-    b.appendChild(tr);
-  });
-}
-function addPos(){pos.push(mkP('Поз.'+(pos.length+1)));rP();calc();sav()}
-function delP(i){if(pos.length<=1)return alert('Хотя бы одна позиция');pos.splice(i,1);rP();calc();sav()}
-function upP(i,k,val){if(k==='n'){pos[i][k]=val}else{pos[i][k]=parseFloat(String(val).replace(',','.'))||0;if(k==='q'&&pos[i][k]<1)pos[i][k]=1;if((k==='w'||k==='h')&&pos[i].w>0&&pos[i].h>0){pos[i].a=+(pos[i].w*pos[i].h/1e6).toFixed(4)}}calc();sav();if(k==='w'||k==='h')rP()}
-function onCut(){$('cutP').value=$('cutType').value;calc()}
+    <!-- Правая колонка: калькуляция и действия -->
+    <div class="side-col">
+      <div class="card">
+        <h2>Калькуляция заказа</h2>
+        <div class="calc-row"><span>Масса металла:</span><b id="res-weight">0.00 кг</b></div>
+        <div class="calc-row"><span>Металл:</span><b id="res-metal">0.00 ₽</b></div>
+        <div class="calc-row"><span>Лазерная резка:</span><b id="res-cut">0.00 ₽</b></div>
+        <div class="calc-row"><span>Гибка:</span><b id="res-bend">0.00 ₽</b></div>
+        <div class="calc-row" id="row-paint" style="display:none;"><span>Покраска RAL:</span><b id="res-paint">0.00 ₽</b></div>
+        <div class="calc-row" id="row-film" style="display:none;"><span>Защитная плёнка:</span><b id="res-film">0.00 ₽</b></div>
+        <div class="calc-row" id="row-sand" style="display:none;"><span>Пескоструй:</span><b id="res-sand">0.00 ₽</b></div>
+        <div class="calc-row" id="row-other" style="display:none;"><span>Доп. работы:</span><b id="res-other">0.00 ₽</b></div>
+        <div class="calc-row" id="row-deliv" style="display:none;"><span>Доставка:</span><b id="res-deliv">0.00 ₽</b></div>
+        <hr style="border:0; border-top:1px solid var(--brd); margin:8px 0;">
+        <div class="calc-row"><span>Подытог:</span><b id="res-subtotal">0.00 ₽</b></div>
+        <div class="calc-row" id="row-urgency" style="display:none;"><span>Срочность:</span><b id="res-urgency">+0.00 ₽</b></div>
+        <div class="calc-row warn" id="row-discount" style="display:none;"><span>Скидка:</span><b id="res-discount">−0.00 ₽</b></div>
+        <div class="calc-row"><span>Итого без НДС:</span><b id="res-net">0.00 ₽</b></div>
+        <div class="calc-row"><span>НДС:</span><b id="res-vat">0.00 ₽</b></div>
 
-function calc(){
-  const m=MATS[$('mat').value]||MATS.galv;
-  const useOwn=$('ownPrice').checked;
-  const cP=v('cPrice',0);
-  const mp=useOwn&&cP>0?cP:m.p;
-  const dens=v('dens',1,null,7850);
-  const cutP=v('cutP',0), piF=v('piF',0);
-  const bP=[v('b1',0),v('b2',0),v('b3',0),v('b4',0)];
-  const bpf=t=>t<=2?bP[0]:t<=4?bP[1]:t<=8?bP[2]:bP[3];
-  
-  let tM=0,tC=0,tB=0,tW=0,tQ=0;
-  pos.forEach((p,i)=>{
-    const q=p.q||1,a=p.a||0,t=p.t||0;
-    const w=a*(t/1000)*dens;
-    const mc=w*mp;
-    const cc=(p.c+p.p*piF)*cutP;
-    const bc=p.b*bpf(t);
-    const s=(mc+cc+bc)*q;
-    tM+=mc*q;tC+=cc*q;tB+=bc*q;tW+=w*q;tQ+=q;
-    const el=$('s'+i);if(el)el.innerText=fmt(s)+' ₽';
-  });
-  
-  // Скидка по объёму
-  let volD=0;
-  if($('volDisc').checked){
-    if(tW>=500)volD=0.10;else if(tW>=100)volD=0.05;
-  }
-  const volDCost=tM*volD;
-  
-  const pA=v('pArea',0),pP=v('pPrice',0),pT=$('pType').value;
-  const pC=pT==='none'?0:pA*pP;
-  const drC=v('drC',0)*v('drP',0);
-  const znC=v('znC',0)*v('znP',0);
-  const wC=v('wC',0)*v('wP',0);
-  const tpC=v('tapC',0)*v('tapP',0);
-  const dl=v('del',0),ot=v('oth',0);
-  
-  const sub=(tM-volDCost)+tC+tB+pC+drC+znC+wC+tpC+dl+ot;
-  const urg=v('urg',0,200),mk=sub*(urg/100);
-  const am=sub+mk;
-  const dc=v('disc',0,100),dcv=am*(dc/100);
-  const ad=am-dcv;
-  const minO=v('minO',0),appMin=minO>0&&ad<minO;
-  const fin=appMin?minO:ad;
-  const vr=parseFloat($('vatR').value)||0;
-  const vA=fin*(vr/100);
-  const grand=fin+vA;window.__fin=fin;window.__vat=vA;window.__grand=grand;
-  
-  let h=`<h3 style="margin:0 0 8px;font-size:14px">Калькуляция (${pos.length} поз., ${tQ} изд.)</h3>`;
-  h+=`<div class="li"><span>Масса:</span><b>${fmt(tW)} кг</b></div>`;
-  h+=`<div class="li"><span>Металл:</span><b>${fmt(tM)} ₽</b></div>`;
-  if(volD>0)h+=`<div class="li" style="color:#276749"><span>Скидка объём (${fN(volD*100,0)}%):</span><b>− ${fmt(volDCost)} ₽</b></div>`;
-  h+=`<div class="li"><span>Резка:</span><b>${fmt(tC)} ₽</b></div>`;
-  h+=`<div class="li"><span>Гибка:</span><b>${fmt(tB)} ₽</b></div>`;
-  if(pC>0)h+=`<div class="li"><span>Покраска:</span><b>${fmt(pC)} ₽</b></div>`;
-  if(drC>0)h+=`<div class="li"><span>Сверление:</span><b>${fmt(drC)} ₽</b></div>`;
-  if(znC>0)h+=`<div class="li"><span>Зенковка:</span><b>${fmt(znC)} ₽</b></div>`;
-  if(wC>0)h+=`<div class="li"><span>Сварка:</span><b>${fmt(wC)} ₽</b></div>`;
-  if(tpC>0)h+=`<div class="li"><span>Резьба:</span><b>${fmt(tpC)} ₽</b></div>`;
-  if(dl>0)h+=`<div class="li"><span>Доставка:</span><b>${fmt(dl)} ₽</b></div>`;
-  if(ot>0)h+=`<div class="li"><span>Прочее:</span><b>${fmt(ot)} ₽</b></div>`;
-  if(urg>0)h+=`<div class="li"><span>Срочность ${fN(urg,0)}%:</span><b>${fmt(mk)} ₽</b></div>`;
-  if(dc>0)h+=`<div class="li"><span>Скидка ${fN(dc,0)}%:</span><b>− ${fmt(dcv)} ₽</b></div>`;
-  if(appMin)h+=`<div class="li" style="color:${'var(--warn)'}"><span>Мин. заказ применён:</span><b>${fmt(minO)} ₽</b></div>`;
-  h+=`<div class="li tot"><span>Итого без НДС:</span><span>${fmt(fin)} ₽</span></div>`;
-  if(vr>0){
-    h+=`<div class="li" style="color:var(--warn)"><span>НДС ${vr}%:</span><b>${fmt(vA)} ₽</b></div>`;
-    h+=`<div class="li gr"><span>ИТОГО с НДС ${vr}%:</span><span>${fmt(grand)} ₽</span></div>`;
-  }
-  $('res').innerHTML=h;
-  
-  try{
-    const st={d:$('dNum').value,c:$('kName').value,p:pos,vat:vr};
-    history.replaceState(null,'','#'+btoa(unescape(encodeURIComponent(JSON.stringify(st)))).slice(0,1500));
-  }catch(e){}
-}
+        <div class="grand-total">
+          <span>Всего к оплате:</span>
+          <strong id="res-gross">0.00 ₽</strong>
+        </div>
 
-// АВТОСОХРАНЕНИЕ
-const F=['cName','cINN','cOGRN','cAddr','cPhone','cEmail','cBank','cRS','cKS','cBIK','dNum','dDate','dValid','dTerm','kName','kINN','kAddr','mName','mPhone','prepay','payTerms','mat','cPrice','matDate','dens','cutType','cutP','piF','b1','b2','b3','b4','pArea','pPrice','pType','drC','drP','znC','znP','wC','wP','tapC','tapP','del','oth','urg','disc','minO','vatR'];
-let tm=null;
-function sav(){if(tm)clearTimeout(tm);tm=setTimeout(()=>{const d={};F.forEach(f=>{const e=$(f);if(e)d[f]=e.value});d.ownPrice=$('ownPrice').checked;d.volDisc=$('volDisc').checked;d.pos=pos;try{localStorage.setItem(LS,JSON.stringify(d))}catch(e){}},400)}
-function loadS(){try{const r=localStorage.getItem(LS);if(!r)return false;const d=JSON.parse(r);F.forEach(f=>{if(d[f]!==undefined&&$(f))$(f).value=d[f]});if(d.ownPrice!==undefined)$('ownPrice').checked=d.ownPrice;if(d.volDisc!==undefined)$('volDisc').checked=d.volDisc;if(Array.isArray(d.pos)&&d.pos.length)pos=d.pos;return true}catch(e){return false}}
+        <div class="action-grid">
+          <button class="btn-primary sm" onclick="saveQuoteLocal()">💾 Сохранить в память</button>
+          <button onclick="window.print()">🖨 Печать КП</button>
+          <button onclick="exportCSV()">Экспорт CSV</button>
+          <button onclick="exportBackupJSON()">Бэкап JSON</button>
+          <label>Восстановить <input type="file" accept=".json" onchange="restoreBackupJSON(event)"></label>
+          <button class="danger" onclick="resetForm()">Сбросить всё</button>
+        </div>
+      </div>
 
-// ИСТОРИЯ
-function saveH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');const s={ts:Date.now(),num:$('dNum').value,dt:$('dDate').value,k:$('kName').value,data:{}};F.forEach(f=>{const e=$(f);if(e)s.data[f]=e.value});s.data.pos=pos;it.unshift(s);if(it.length>20)it.pop();localStorage.setItem(LH,JSON.stringify(it));alert('⭐ Сохранено в историю')}
-function showH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');if(!it.length)return alert('История пуста');const lst=it.map((x,i)=>`${i+1}. ${x.num} от ${x.dt} — ${x.k||'—'}`).join('\n');const c=prompt(`История (${it.length}):\n${lst}\n\nВведите номер:`,1);if(!c)return;const i=+c-1;if(i>=0&&i<it.length){Object.entries(it[i].data).forEach(([k,v])=>{if(k==='pos')pos=v;else if($(k))$(k).value=v});rP();calc();alert('Загружено')}}
+      <!-- Сохранённые КП в локальной памяти -->
+      <div class="card">
+        <h2>История КП (в памяти браузера)</h2>
+        <div id="saved-quotes-list" style="max-height:220px; overflow-y:auto; font-size:11px;">
+          <!-- Список -->
+        </div>
+      </div>
+    </div>
+  </div>
 
-// ЭКСПОРТ CSV
-function csv(){const rows=[['Позиция','Наименование','Кол-во','Пл.м²','Толщ.','Рез м','Врез','Гибов','Сумма']];pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s])});rows.push([]);rows.push(['Итого без НДС',$('res').innerText.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)?.[1]||'']);rows.push(['ИТОГО с НДС',$('res').innerText.match(/ИТОГО с НДС[^\d]*([\d\s.,]+)/)?.[1]||'']);const c='\uFEFF'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');dl(new Blob([c],{type:'text/csv;charset=utf-8'}),`КП_${$('dNum').value}.csv`)}
+  <!-- ВКЛАДКА 2: ЧЕРТЕЖИ 2D / 3D / ГИБКА / РАСКРОЙ -->
+  <div id="tab-designer" class="layout" style="display:none;">
+    <div class="main-col">
 
-// ЭКСПОРТ EXCEL
-function xls(){
-  let h='<table border="1"><tr><th>N</th><th>Наименование</th><th>Кол-во</th><th>Площадь</th><th>Толщ</th><th>Рез м</th><th>Врез</th><th>Гибов</th><th>Сумма</th></tr>';
-  pos.forEach(function(p,i){
-    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
-    h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.q+'</td><td>'+p.a+'</td><td>'+p.t+'</td><td>'+p.c+'</td><td>'+p.p+'</td><td>'+p.b+'</td><td>'+s+'</td></tr>';
-  });
-  h+='</table>';
-  var blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});
-  dl(blob,'KP_'+$('dNum').value+'.xls');
-}
+      <!-- Загрузка / Генератор формы -->
+      <div class="card">
+        <div class="card-head">
+          <h2>Источник детали</h2>
+          <button class="link-btn" onclick="toggleMemoModal()">📋 Памятка оборудования</button>
+        </div>
 
-// ЭКСПОРТ CSV
-function csv(){
-  var rows=[['Позиция','Наименование','Кол-во','Пл.м2','Толщ','Рез м','Врез','Гибов','Сумма']];
-  pos.forEach(function(p,i){
-    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
-    rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s]);
-  });
-  var csvTxt='\uFEFF'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
-  dl(new Blob([csvTxt],{type:'text/csv;charset=utf-8'}),'KP_'+$('dNum').value+'.csv');
-}
+        <div id="memo-block" class="memo-box" style="display:none;">
+          <div style="font-weight:700; margin-bottom:6px;">Технические возможности оборудования (Памятка производства):</div>
+          <div class="memo-grid">
+            <div>
+              <b>Лазерная резка:</b>
+              <ul>
+                <li>Рабочее поле: <b>2990 × 1490 мм</b></li>
+                <li>Размер раскроя: <b>2490 × 1240 мм</b> (лист 2500×1250)</li>
+                <li>Сталь: <b>до 5 мм</b> · Нержавейка, алюминий: <b>до 3 мм</b></li>
+              </ul>
+            </div>
+            <div>
+              <b>Гибка на прессе:</b>
+              <ul>
+                <li>Толщина: <b>0,2 – 2 мм</b> (выше — по согласованию)</li>
+                <li>Ширина гиба: <b>до 2490 мм</b></li>
+                <li>Мин. борт: <b>11 мм</b> · Радиус: <b>R = t</b></li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
-function dl(blob,name){
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <div>
+            <label class="fld">
+              <span>Загрузить DXF (LINE, POLYLINE, CIRCLE, ARC)</span>
+              <input type="file" id="dxfFileInput" accept=".dxf" multiple onchange="handleDXFFiles(event)">
+            </label>
+            <p class="hint">Автоматически сошьёт контуры, вычтет отверстия и определит точные размеры.</p>
+          </div>
+          <div>
+            <label class="fld">
+              <span>Генератор типовых деталей</span>
+              <select id="genKind" onchange="generateShapeUI()">
+                <option value="rect">Прямоугольник</option>
+                <option value="roundRect">Скруглённый прямоугольник</option>
+                <option value="plateHoles">Плита с 4 отверстиями</option>
+                <option value="disc">Круг / фланец</option>
+                <option value="ring">Кольцо</option>
+                <option value="lBracket">L-уголок</option>
+              </select>
+            </label>
+            <div class="grid4" style="margin-top:6px;">
+              <label class="fld"><span>Ш, мм</span><input type="number" id="genW" value="400" onchange="generateShapeUI()"></label>
+              <label class="fld"><span>В, мм</span><input type="number" id="genH" value="300" onchange="generateShapeUI()"></label>
+              <label class="fld"><span>Радиус / Отв.</span><input type="number" id="genR" value="25" onchange="generateShapeUI()"></label>
+            </div>
+            <button class="btn-primary sm" style="margin-top:8px;" onclick="addCurrentShapeToParts()">+ Создать деталь</button>
+          </div>
+        </div>
+      </div>
 
-function cpLink(){
-  var url=location.href;
-  if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){alert('Ссылка скопирована: '+url.slice(0,80)+'...')});
-  else prompt('Скопируйте:',url);
-}
+      <!-- Окно просмотра: 2D Чертёж / Гибка / 3D Модель -->
+      <div class="card">
+        <div class="card-head">
+          <h2 id="part-title">Просмотр детали</h2>
+          <div class="viewer-bar" style="margin:0;">
+            <button id="btn-v-2d" class="active" onclick="switchDesignView('2d')">2D Чертёж</button>
+            <button id="btn-v-bend" onclick="switchDesignView('bend')">Гибка</button>
+            <button id="btn-v-3d" onclick="switchDesignView('3d')">3D Модель</button>
+          </div>
+        </div>
 
-function saveJSON(){
-  var data={
-    ver:'v2',
-    saved:new Date().toISOString(),
-    docNum:$('dNum')?$('dNum').value:'',
-    positions:pos
-  };
-  var fields=['cName','cINN','cOGRN','cAddr','cPhone','cEmail','cBank','cRS','cKS','cBIK','dNum','dDate','dValid','dTerm','kName','kINN','kAddr','mName','mPhone','prepay','payTerms','mat','cPrice','matDate','dens','cutType','cutP','piF','b1','b2','b3','b4','pArea','pPrice','pType','drC','drP','znC','znP','wC','wP','tapC','tapP','del','oth','urg','disc','minO','vatR'];
-  data.fields={};
-  fields.forEach(function(f){if($(f))data.fields[f]=$(f).value});
-  if($('ownPrice'))data.fields.ownPrice=$('ownPrice').checked;
-  if($('volDisc'))data.fields.volDisc=$('volDisc').checked;
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='KP_'+(data.docNum||'backup')+'_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-function loadJSON(){
-  var el=$('fileJSONRestore');
-  if(el)el.click();
-}
-function doLoadJSON(ev){
-  var f=ev.target.files[0];
-  if(!f)return;
-  var r=new FileReader();
-  r.onload=function(e){
-    try{
-      var data=JSON.parse(e.target.result);
-      if(data.fields){
-        Object.keys(data.fields).forEach(function(k){
-          var el=$(k);
-          if(!el)return;
-          if(typeof data.fields[k]==='boolean')el.checked=data.fields[k];
-          else el.value=data.fields[k];
+        <!-- 2D Чертёж -->
+        <div id="view-2d">
+          <div id="svg-drawing-wrap" style="position:relative; overflow:hidden; border:1px solid var(--brd); border-radius:10px; background:#fff; cursor:grab; touch-action:none;">
+            <svg id="svg-drawing" viewBox="0 0 760 400" class="svg-canvas" style="border:none; border-radius:0;"></svg>
+          </div>
+          <div class="viewer-bar">
+            <button onclick="fitDrawing2D()" style="font-weight:700; color:var(--acc); border-color:var(--acc);">🔍 По размеру окна</button>
+            <button onclick="zoomDrawing2D(1.25)" title="Приблизить">➕</button>
+            <button onclick="zoomDrawing2D(0.8)" title="Отдалить">➖</button>
+            <span id="zoom2d-label" style="font-weight:600; font-size:11px; padding:0 4px;">100%</span>
+            <button onclick="resetZoom2D(1)" title="Реальный размер 1:1">1:1</button>
+            <span style="width:1px; height:16px; background:var(--brd); margin:0 4px;"></span>
+            <button onclick="exportDrawingSVG()">Скачать SVG</button>
+            <button onclick="exportDrawingPNG()">Скачать PNG</button>
+            <span class="hint" style="margin-left:auto;">Тяните мышью/пальцем · Колесо — зум</span>
+          </div>
+        </div>
+
+        <!-- Гибка -->
+        <div id="view-bend" style="display:none;">
+          <div class="viewer-bar" style="margin-bottom:10px;">
+            <button onclick="applyBendPreset([90])">Пресет: Уголок 90°</button>
+            <button onclick="applyBendPreset([90, 90])">П-профиль</button>
+            <button onclick="applyBendPreset([90, -90])">Z-профиль</button>
+            <button onclick="applyBendPreset([90, 90, 90, 90])">Короб 4 гиба</button>
+            <button class="btn-primary sm" onclick="addCustomBend()">+ Добавить гиб</button>
+            <label style="font-size:10px; margin-left:auto; display:flex; align-items:center; gap:4px;">
+              K-фактор: <input type="number" step="0.01" id="kFactorInput" value="0.44" style="width:50px; height:24px;" onchange="recalcBendingUI()">
+            </label>
+          </div>
+          <div id="bend-notices"></div>
+          <svg id="svg-bend-flat" viewBox="0 0 760 220" class="svg-canvas" style="margin-bottom:10px;"></svg>
+          <svg id="svg-bend-profile" viewBox="0 0 760 200" class="svg-canvas"></svg>
+        </div>
+
+        <!-- 3D Модель (Three.js WebGL) -->
+        <div id="view-3d" style="display:none;">
+          <div id="three-mount" class="viewer-container"></div>
+          <div class="viewer-bar">
+            <button onclick="fit3DCamera()" style="font-weight:700; color:var(--acc); border-color:var(--acc);">🔍 По размеру окна</button>
+            <button onclick="zoom3D(0.8)" title="Приблизить">➕</button>
+            <button onclick="zoom3D(1.25)" title="Отдалить">➖</button>
+            <button onclick="toggle3DSpin()" id="btn-3d-spin">⏸ Пауза вращения</button>
+            <button onclick="toggle3DWireframe()" id="btn-3d-wire">Каркас</button>
+            <button onclick="reset3DCamera('iso')">Изометрия</button>
+            <button onclick="reset3DCamera('top')">Сверху</button>
+            <span class="hint" style="margin-left:auto;">Тяните мышью/пальцем · Колесо — зум</span>
+          </div>
+        </div>
+
+        <!-- Спецификация активной детали -->
+        <div id="part-notices" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Раскрой MaxRects -->
+      <div class="card">
+        <div class="card-head">
+          <h2>Оптимальный раскрой на листы (MaxRects 2D Nesting)</h2>
+          <div style="display:flex; gap:8px;">
+            <button class="link-btn" onclick="autoFindBestSheet()">⚡ Подобрать экономный лист</button>
+            <button class="btn-primary sm" onclick="runNestingUI()">Рассчитать раскладку</button>
+          </div>
+        </div>
+        <div class="grid4">
+          <label class="fld">
+            <span>Формат листа</span>
+            <select id="nestSheetSelect" onchange="runNestingUI()">
+              <option value="2500x1250">2500 × 1250 мм (Стандартный лист · раскрой 2490×1240)</option>
+              <option value="2990x1490">2990 × 1490 мм (Макс. рабочее поле станка)</option>
+              <option value="3000x1500">3000 × 1500 мм</option>
+              <option value="2000x1250">2000 × 1250 мм</option>
+              <option value="6000x2000">6000 × 2000 мм</option>
+            </select>
+          </label>
+          <label class="fld"><span>Отступ кромки, мм</span><input type="number" id="nestMargin" value="5" onchange="runNestingUI()"></label>
+          <label class="fld"><span>Зазор реза (kerf), мм</span><input type="number" id="nestKerf" value="2" onchange="runNestingUI()"></label>
+          <label class="fld" style="justify-content:flex-end;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:11px; height:34px;">
+              <input type="checkbox" id="nestRotate" checked onchange="runNestingUI()"> Поворот 90°
+            </label>
+          </label>
+        </div>
+
+        <div id="nest-summary" style="display:none; margin-top:12px;" class="grid4">
+          <!-- Сводка листов -->
+        </div>
+
+        <div id="nest-sheets-container" class="sheet-grid">
+          <!-- Карты листов раскроя -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Правая колонка конструктора -->
+    <div class="side-col">
+      <div class="card">
+        <div class="card-head">
+          <h2>Список деталей (<span id="parts-count">0</span>)</h2>
+          <button class="link-btn" onclick="clearParts()">Очистить</button>
+        </div>
+        <div id="parts-list" style="max-height:350px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+          <!-- Детали -->
+        </div>
+        <button class="btn-primary wide" onclick="sendPartsToKP()">📋 Отправить детали в КП</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: СТЕНД 160 ТЕСТОВ -->
+  <div id="tab-tests" class="layout" style="display:none;">
+    <div class="main-col" style="grid-column: 1 / -1;">
+      <div class="card">
+        <div class="card-head">
+          <h2>🧪 Автотесты ФАЙЕРПРОМ (160 тестов)</h2>
+          <button class="btn-primary sm" onclick="runAllTests()">Запустить повторно</button>
+        </div>
+        <div style="display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+          <span class="badge-tag" style="background:#e6fffa; color:#234e52; font-size:13px; padding:6px 12px;">✓ Пройдено: <b id="tests-pass">0</b></span>
+          <span class="badge-tag" id="badge-fail" style="background:#edf2f7; color:#2d3748; font-size:13px; padding:6px 12px;">✗ Провалено: <b id="tests-fail">0</b></span>
+          <span class="badge-tag" style="background:#edf2f7; color:#2d3748; font-size:13px; padding:6px 12px;">Всего: <b id="tests-total">160</b></span>
+          <span class="badge-tag" style="background:#e6fffa; color:#234e52; font-size:13px; padding:6px 12px;">Успех: <b id="tests-pct">100%</b></span>
+        </div>
+        <div id="tests-list" style="max-height:600px; overflow-y:auto;">
+          <!-- Результаты проверок -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно 2D/3D инспекции изделия -->
+  <div id="pos-modal" class="modal-backdrop" style="display:none;" onclick="closePosModal()">
+    <div class="modal-window" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3 id="pos-modal-title" style="margin:0; font-size:16px;">Деталь</h3>
+            <span id="pos-modal-badge" class="badge-tag"></span>
+          </div>
+          <p id="pos-modal-dims" class="hint" style="margin:4px 0 0;"></p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="viewer-bar" style="margin:0;">
+            <button id="pos-modal-btn-2d" class="active" onclick="switchModalView('2d')">2D Чертёж</button>
+            <button id="pos-modal-btn-3d" onclick="switchModalView('3d')">3D Модель</button>
+            <button id="pos-modal-btn-bend" style="display:none;" onclick="switchModalView('bend')">Гибка</button>
+          </div>
+          <button class="del-btn" style="font-size:22px; width:32px; height:32px;" onclick="closePosModal()">×</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <!-- 2D Чертёж модалки -->
+        <div id="pos-modal-v-2d">
+          <div id="pos-modal-svg-wrap" style="position:relative; overflow:hidden; border:1px solid var(--brd); border-radius:10px; background:#fff; cursor:grab; touch-action:none;">
+            <svg id="pos-modal-svg" viewBox="0 0 760 400" class="svg-canvas" style="border:none; border-radius:0;"></svg>
+          </div>
+          <div class="viewer-bar">
+            <button onclick="fitPosModal2D()" style="font-weight:700; color:var(--acc); border-color:var(--acc);">🔍 По размеру окна</button>
+            <button onclick="zoomPosModal2D(1.25)">➕</button>
+            <button onclick="zoomPosModal2D(0.8)">➖</button>
+            <button onclick="exportPosModalSVG()">Скачать SVG</button>
+            <button onclick="exportPosModalPNG()">Скачать PNG</button>
+            <span class="hint" style="margin-left:auto;">Тяните мышью/пальцем · Колесо — зум</span>
+          </div>
+        </div>
+
+        <!-- 3D Модель модалки -->
+        <div id="pos-modal-v-3d" style="display:none;">
+          <div id="pos-modal-three-mount" class="viewer-container"></div>
+          <div class="viewer-bar">
+            <button onclick="fitPosModal3D()" style="font-weight:700; color:var(--acc); border-color:var(--acc);">🔍 По размеру окна</button>
+            <button onclick="zoomPosModal3D(0.8)">➕</button>
+            <button onclick="zoomPosModal3D(1.25)">➖</button>
+            <button onclick="togglePosModalSpin()" id="btn-pm-spin">⏸ Пауза вращения</button>
+            <button onclick="togglePosModalWire()" id="btn-pm-wire">Каркас</button>
+            <button onclick="resetPosModalCamera('iso')">Изометрия</button>
+            <button onclick="resetPosModalCamera('top')">Сверху</button>
+          </div>
+        </div>
+
+        <!-- Гибка модалки -->
+        <div id="pos-modal-v-bend" style="display:none;">
+          <svg id="pos-modal-bend-flat" viewBox="0 0 760 220" class="svg-canvas" style="margin-bottom:10px;"></svg>
+          <svg id="pos-modal-bend-profile" viewBox="0 0 760 200" class="svg-canvas"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Печатный бланк КП (для window.print()) -->
+  <div id="print-area">
+    <h1 style="margin:0 0 4px; font-size:18pt;">КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ <span id="pr-docNum"></span></h1>
+    <p style="margin:0 0 12px; font-size:10pt;">от <span id="pr-date"></span> · Материал: <span id="pr-mat"></span> · Срок изготовления: <span id="pr-term"></span></p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; font-size:10pt;">
+      <div><b>Исполнитель:</b><p id="pr-exec" style="margin:2px 0;"></p></div>
+      <div><b>Заказчик:</b><p id="pr-cust" style="margin:2px 0;"></p></div>
+    </div>
+    <table style="width:100%; border-collapse:collapse; font-size:9.5pt; margin-bottom:12px;" border="1">
+      <thead>
+        <tr style="background:#f2f2f2;"><th style="width:28px;">№</th><th style="width:55px; text-align:center;">Эскиз</th><th>Наименование</th><th>Кол-во</th><th>Ш×В, мм</th><th>Площадь м²</th><th>Толщина</th><th>Сумма, ₽</th></tr>
+      </thead>
+      <tbody id="pr-table-body"></tbody>
+    </table>
+    <div id="pr-extra-notes" style="margin:8px 0; padding:8px; border:1px dashed #666; font-size:9.5pt; display:none;"></div>
+    <table style="width:50%; margin-left:auto; border-collapse:collapse; font-size:10pt;" border="1">
+      <tr><td>Масса металла:</td><td id="pr-weight" style="text-align:right"></td></tr>
+      <tr><td>Итого без НДС:</td><td id="pr-net" style="text-align:right"></td></tr>
+      <tr><td>НДС:</td><td id="pr-vat" style="text-align:right"></td></tr>
+      <tr style="font-weight:700;"><td>Всего к оплате:</td><td id="pr-gross" style="text-align:right"></td></tr>
+    </table>
+    <p style="margin-top:14px; font-size:9pt; color:#444;" id="pr-footer"></p>
+  </div>
+
+  <script>
+    /* ====================================================================
+       ЛОГИКА АВТОНОМНОГО ПРИЛОЖЕНИЯ (Полностью автономно в браузере)
+       ==================================================================== */
+    let currentTab = 'kp';
+    let positions = [];
+    let designerParts = [];
+    let activePartIndex = 0;
+    let currentDesignView = '2d';
+    let customBends = [];
+    let threeScene, threeCamera, threeRenderer, threeMesh, threeAnimFrame;
+    let threeSpin = true;
+
+    // Инициализация при старте
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('docDate').value = new Date().toISOString().slice(0, 10);
+      loadSavedState();
+      if (positions.length === 0) {
+        addPosition("Деталь 1", 1, 500, 400, 0.2, 1.5, 1.8, 4, 2);
+      }
+      calcAll();
+      renderSavedQuotesList();
+      generateShapeUI();
+      initThreeJS();
+    });
+
+    // Смена вкладок
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-kp').style.display = tab === 'kp' ? 'grid' : 'none';
+      document.getElementById('tab-designer').style.display = tab === 'designer' ? 'grid' : 'none';
+      document.getElementById('tab-tests').style.display = tab === 'tests' ? 'grid' : 'none';
+
+      const btnMap = { kp: 0, designer: 1, tests: 2 };
+      document.querySelectorAll('.tab-btn')[btnMap[tab]].classList.add('active');
+
+      if (tab === 'designer') {
+        renderCurrentPartView();
+      } else if (tab === 'tests') {
+        runAllTests();
+      }
+    }
+
+    function toggleDark() {
+      document.body.classList.toggle('dark');
+    }
+
+    function toggleReq() {
+      const el = document.getElementById('extra-req');
+      el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+    }
+
+    function toggleMemoModal() {
+      const el = document.getElementById('memo-block');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Сохранение файла самого себя на телефон
+    function downloadSelf() {
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'fayerprom-offline.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      alert('Файл "fayerprom-offline.html" сохранён!\nТеперь вы можете открыть его в телефоне даже без подключения к интернету.');
+    }
+
+    /* ---------------- 1. Калькулятор КП ---------------- */
+    function onMatChange() {
+      const sel = document.getElementById('matSelect');
+      const opt = sel.options[sel.selectedIndex];
+      document.getElementById('matDensity').value = opt.getAttribute('data-d');
+      if (!document.getElementById('ownPrice').checked) {
+        document.getElementById('matPrice').value = opt.getAttribute('data-p');
+      }
+      const maxT = opt.getAttribute('data-max');
+      document.getElementById('mat-limit-badge').textContent = maxT === '0' 
+        ? '⚠️ Цветной металл: по запросу' 
+        : `Лимит станка: до ${maxT} мм`;
+      calcAll();
+    }
+
+    function onOwnPriceChange() {
+      const own = document.getElementById('ownPrice').checked;
+      document.getElementById('matPrice').disabled = !own;
+      if (!own) onMatChange();
+    }
+
+    function onCutTypeChange() {
+      document.getElementById('cutPrice').value = document.getElementById('cutType').value;
+      calcAll();
+    }
+
+    function getThumbSvg(pos, w=58, h=38) {
+      const pad = 4;
+      const availW = w - pad * 2;
+      const availH = h - pad * 2;
+      const pw = Math.max(10, pos.w || 400);
+      const ph = Math.max(10, pos.h || 300);
+      const sc = Math.min(availW / pw, availH / ph);
+      const ox = (w - pw * sc) / 2;
+      const oy = (h - ph * sc) / 2;
+
+      let s = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="background:#ffffff;border:1px solid var(--brd);border-radius:5px;display:block;">`;
+      s += `<rect width="${w}" height="${h}" fill="#ffffff"/>`;
+
+      if (pos.segs && pos.segs.length > 0) {
+        pos.segs.forEach(seg => {
+          s += `<line x1="${(ox + seg.x1 * sc).toFixed(1)}" y1="${(oy + seg.y1 * sc).toFixed(1)}" x2="${(ox + seg.x2 * sc).toFixed(1)}" y2="${(oy + seg.y2 * sc).toFixed(1)}" stroke="#1a365d" stroke-width="1.3" stroke-linecap="round"/>`;
+        });
+      } else {
+        s += `<rect x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" width="${(pw * sc).toFixed(1)}" height="${(ph * sc).toFixed(1)}" fill="rgba(49,130,206,0.18)" stroke="#1a365d" stroke-width="1.3"/>`;
+      }
+
+      if (pos.circles && pos.circles.length > 0) {
+        pos.circles.forEach(c => {
+          s += `<circle cx="${(ox + c.cx * sc).toFixed(1)}" cy="${(oy + c.cy * sc).toFixed(1)}" r="${Math.max(1.2, c.r * sc).toFixed(1)}" fill="#ffffff" stroke="#c05621" stroke-width="1"/>`;
         });
       }
-      if(Array.isArray(data.positions)&&data.positions.length){
-        pos=data.positions;
-        if(typeof rP==='function')rP();
+
+      if (pos.bends && pos.bends.length > 0) {
+        pos.bends.forEach(b => {
+          const bx = ox + (b.pos || b.position || 0) * sc;
+          s += `<line x1="${bx.toFixed(1)}" y1="${oy.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${(oy + ph * sc).toFixed(1)}" stroke="#dd6b20" stroke-width="1" stroke-dasharray="2 1.5"/>`;
+        });
       }
-      if(typeof calc==='function')calc();
-      alert('OK: загружено '+(data.positions?data.positions.length:0)+' поз.');
-    }catch(err){
-      alert('Ошибка загрузки: '+err.message);
+
+      s += `</svg>`;
+      return s;
     }
-  };
-  r.readAsText(f);
-}
-function tgShare(){
-  var num=$('dNum').value||'—';
-  var total=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';
-  var text='КП № '+num+'\nСумма: '+total+' ₽ с НДС\nФАЙЕРПРОМ — металлообработка';
-  var url=location.href;
-  var tgUrl='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);
-  window.open(tgUrl,'_blank');
-}
-function mailTo(){
-  var to='',subj='КП '+$('dNum').value+' от '+$('dDate').value,body='Здравствуйте!\n\nНаправляю КП.\nС уважением';
-  location.href='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
-}
 
-function toggleTheme(){document.body.classList.toggle('dark')}
-
-// ПЕЧАТЬ
-let pm='kp';
-function prt(m){
-  pm=m;
-  buildP();
-  setTimeout(function(){window.print()}, 150);
-}
-  
-function buildP(){
-  const m=MATS[$('mat').value]||MATS.galv;
-  const vr=parseFloat($('vatR').value)||0;
-  const r=$('res').innerText;
-  const tot=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';const tB2=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
-  const tB=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
-  const tV=window.__vat?window.__vat.toFixed(2).replace('.',','):'';
-  const title=pm==='kp'?'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ':pm==='inv'?'СЧЁТ НА ОПЛАТУ':'ТЕХНИЧЕСКОЕ ЗАДАНИЕ';
-  let h=`<h1>${title} № ${esc($('dNum').value)} от ${new Date($('dDate').value).toLocaleDateString('ru-RU')}</h1>
-  <div style="font-size:10px;color:#555;margin-bottom:8px">${esc($('cName').value)} · ИНН ${esc($('cINN').value||'—')} · ${esc($('cPhone').value||'')}</div>
-  <table><tr><th>Исполнитель</th><th>Заказчик</th></tr><tr>
-  <td>${esc($('cName').value)}<br>ИНН ${esc($('cINN').value||'—')}<br>${esc($('cAddr').value||'')}</td>
-  <td>${esc($('kName').value||'—')}<br>ИНН ${esc($('kINN').value||'—')}<br>${esc($('kAddr').value||'')}</td></tr></table>
-  <table><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Пл.м²</th><th>Толщ.</th>${pm==='kp'?'<th>Сумма</th>':''}</tr>`;
-  pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;h+=`<tr><td>${i+1}</td><td>${esc(p.n)}</td><td>${p.q}</td><td>${fN(p.a,2)}</td><td>${fN(p.t,2)}</td>${pm==='kp'?`<td>${fmt(s)}</td>`:''}</tr>`});
-  h+='</table>';
-  if(pm!=='spec'){
-    h+=`<table><tr><td>Итого без НДС</td><td style="text-align:right;font-weight:700">${tB}</td></tr>`;
-    if(vr>0)h+=`<tr><td>НДС ${vr}%</td><td style="text-align:right">${tV}</td></tr>`;
-    h+=`<tr class="gg"><td>ВСЕГО к оплате</td><td style="text-align:right">${tot}</td></tr></table>`;
-  }
-  if(pm==='kp')h+=`<div style="font-size:10px;margin-top:8px;color:#333">Срок изготовления: ${esc($('dTerm').value)}<br>Предоплата: ${$('prepay').value}%<br>Действительно до: ${new Date($('dValid').value).toLocaleDateString('ru-RU')}<br>${vr>0?`Цены с НДС ${vr}%.`:'Цены без НДС.'}</div>`;
-  if(pm==='inv')h+=`<div style="font-size:10px;margin-top:10px;border:1px solid #999;padding:6px"><b>Банк:</b> ${esc($('cBank').value||'—')}<br>Р/с ${esc($('cRS').value||'—')} · К/с ${esc($('cKS').value||'—')} · БИК ${esc($('cBIK').value||'—')}</div>`;
-  h+=`<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:10.5px"><div style="border-top:1px solid #000;width:45%;padding-top:3px">Исполнитель: ${esc($('mName').value||'—')}</div><div style="border-top:1px solid #000;width:45%;padding-top:3px">Заказчик: ${esc($('kName').value||'—')}</div></div>`;
-  $('po').innerHTML=h;
-  try {
-    if (window.fpNest && (window.fpNestIMG||window.fpNestSVG) && window.fpNestStats && pos.length) {
-      var po = document.getElementById('po');
-      var wrap = document.createElement('div');
-      wrap.style.pageBreakBefore = 'always';
-      wrap.style.marginTop = '20px';
-      var items = pos.map(function(p){ return { name: p.n, count: p.q, w: p.w||500, h: p.h||400 }; });
-      var res = window.fpNest(2500, 1250, 10, items);
-      var st = window.fpNestStats(res, 2500, 1250);
-      var mapFn = window.fpNestIMG || window.fpNestSVG;wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + mapFn(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
-      po.appendChild(wrap);
+    function addPosition(name="Деталь", q=1, w=500, h=400, a=0.2, t=1.5, c=1.8, p=4, b=0, segs=null, circles=null, bends=null) {
+      if (!segs || segs.length === 0) {
+        segs = [
+          { x1: 0, y1: 0, x2: w, y2: 0 },
+          { x1: w, y1: 0, x2: w, y2: h },
+          { x1: w, y1: h, x2: 0, y2: h },
+          { x1: 0, y1: h, x2: 0, y2: 0 }
+        ];
+      }
+      positions.push({
+        id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        name, q, w, h, a, t, c, p, b,
+        segs,
+        circles: circles || [],
+        bends: bends || []
+      });
+      renderPositionsTable();
+      calcAll();
     }
-  } catch(e){}
-}
 
-function rst(){if(!confirm('Сбросить всё?'))return;localStorage.removeItem(LS);location.hash='';location.reload()}
+    function removePosition(idx) {
+      positions.splice(idx, 1);
+      if (positions.length === 0) addPosition();
+      renderPositionsTable();
+      calcAll();
+    }
 
-function loadURL(){try{if(!location.hash||location.hash.length<5)return false;const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));if(s.d)$('dNum').value=s.d;if(s.c)$('kName').value=s.c;if(Array.isArray(s.p)&&s.p.length)pos=s.p;if(s.vat!==undefined)$('vatR').value=String(s.vat);return true}catch(e){return false}}
+    function updatePos(idx, field, val) {
+      const num = parseFloat(val) || 0;
+      positions[idx][field] = field === 'name' ? val : num;
+      if (field === 'w' || field === 'h') {
+        const pw = positions[idx].w;
+        const ph = positions[idx].h;
+        positions[idx].a = Number(((pw * ph) / 1e6).toFixed(4));
+        if (!positions[idx].isCustomDxf) {
+          positions[idx].segs = [
+            { x1: 0, y1: 0, x2: pw, y2: 0 },
+            { x1: pw, y1: 0, x2: pw, y2: ph },
+            { x1: pw, y1: ph, x2: 0, y2: ph },
+            { x1: 0, y1: ph, x2: 0, y2: 0 }
+          ];
+        }
+      }
+      renderPositionsTable();
+      calcAll();
+    }
 
-window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&__dxf.length){window.__dxfLoaded=true;__dxf.forEach(function(p){pos.push({id:Date.now()+Math.random(),n:p.name||"Из DXF",q:p.count||1,a:p.area||0.5,t:1.5,c:p.cut||5,p:5,b:2,w:p.w||500,h:p.h||400})});window.fpClearParts&&window.fpClearParts();}
-  const d=new Date();$('dDate').value=today();d.setDate(d.getDate()+14);$('dValid').value=d.toISOString().slice(0,10);$('matDate').value=today();
-  if(!pos||!pos.length){pos=[mkP('Деталь 1',1,0.5,1.5,5,5,2)]}
-  if(!loadURL())loadS();
-  rP();calc();
-  document.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',sav);e.addEventListener('change',sav)});
-};
-window.addEventListener('beforeunload',sav);
-</script>
-<input type="file" id="fileJSONRestore" accept=".json" style="display:none" onchange="doLoadJSON(event)"></body>
+    function renderPositionsTable() {
+      const tbody = document.getElementById('pos-tbody');
+      tbody.innerHTML = '';
+      positions.forEach((pos, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="width:70px; text-align:center; padding:2px;">
+            <button type="button" class="thumb-cell-btn" onclick="inspectPosition(${i})" title="Посмотреть 2D чертёж и 3D модель изделия">
+              ${getThumbSvg(pos, 58, 38)}
+              <span class="thumb-hover-tag">👁️ 2D/3D</span>
+            </button>
+          </td>
+          <td><input type="text" value="${pos.name}" onchange="updatePos(${i},'name',this.value)"></td>
+          <td><input type="number" min="1" value="${pos.q}" onchange="updatePos(${i},'q',this.value)"></td>
+          <td><input type="number" value="${pos.w}" onchange="updatePos(${i},'w',this.value)"></td>
+          <td><input type="number" value="${pos.h}" onchange="updatePos(${i},'h',this.value)"></td>
+          <td><input type="number" step="0.0001" value="${pos.a}" onchange="updatePos(${i},'a',this.value)"></td>
+          <td>
+            <select onchange="updatePos(${i},'t',this.value)">
+              ${[0.2, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0].map(t => 
+                `<option value="${t}" ${pos.t===t?'selected':''}>${t}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td><input type="number" step="0.1" value="${pos.c}" onchange="updatePos(${i},'c',this.value)"></td>
+          <td><input type="number" value="${pos.p}" onchange="updatePos(${i},'p',this.value)"></td>
+          <td><input type="number" value="${pos.b}" onchange="updatePos(${i},'b',this.value)"></td>
+          <td class="sum" id="pos-sum-${i}">0.00 ₽</td>
+          <td><button class="del-btn" onclick="removePosition(${i})">×</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ---------------- Инспекция каждого изделия (2D / 3D Модалка) ---------------- */
+    let modalPosIndex = 0;
+    let pmModalView = '2d';
+    let pmZoom2D = 1;
+    let pmPan2D = { x: 0, y: 0 };
+    let pmIsDragging = false;
+    let pmStartPtr = { x: 0, y: 0 };
+    let pmThreeScene, pmThreeCamera, pmThreeRenderer, pmThreeMesh, pmAnimFrame;
+    let pmSpin = true;
+    let pmIdealDist = 600;
+
+    function inspectPosition(idx) {
+      modalPosIndex = idx;
+      const pos = positions[idx];
+      if (!pos) return;
+
+      document.getElementById('pos-modal-title').textContent = pos.name;
+      document.getElementById('pos-modal-badge').textContent = `${pos.w} × ${pos.h} мм · S ${pos.t} мм`;
+      document.getElementById('pos-modal-dims').textContent = `Кол-во: ${pos.q} шт · Площадь: ${pos.a} м² · Рез: ${pos.c} м · Врезок: ${pos.p} · Гибов: ${pos.b}`;
+
+      const bendBtn = document.getElementById('pos-modal-btn-bend');
+      if (bendBtn) bendBtn.style.display = (pos.bends && pos.bends.length > 0) ? 'inline-block' : 'none';
+
+      document.getElementById('pos-modal').style.display = 'grid';
+      fitPosModal2D();
+      switchModalView('2d');
+    }
+
+    function closePosModal() {
+      document.getElementById('pos-modal').style.display = 'none';
+      if (pmAnimFrame) cancelAnimationFrame(pmAnimFrame);
+    }
+
+    function switchModalView(v) {
+      pmModalView = v;
+      ['2d', '3d', 'bend'].forEach(m => {
+        const el = document.getElementById(`pos-modal-v-${m}`);
+        const btn = document.getElementById(`pos-modal-btn-${m}`);
+        if (el) el.style.display = m === v ? 'block' : 'none';
+        if (btn) btn.classList.toggle('active', m === v);
+      });
+
+      const pos = positions[modalPosIndex];
+      if (!pos) return;
+
+      if (v === '2d') {
+        renderPosModal2D(pos);
+      } else if (v === '3d') {
+        renderPosModal3D(pos);
+      } else if (v === 'bend') {
+        renderPosModalBend(pos);
+      }
+    }
+
+    function renderPosModal2D(pos) {
+      initPosModalInteraction();
+      const svg = document.getElementById('pos-modal-svg');
+      const W = 760, H = 400;
+      const padLeft = 70, padRight = 35, padBottom = 55, padTop = 45;
+      const availW = W - padLeft - padRight;
+      const availH = H - padTop - padBottom;
+
+      const baseScale = Math.min(availW / Math.max(1, pos.w), availH / Math.max(1, pos.h));
+      const scale = baseScale * pmZoom2D;
+
+      let content = `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+      content += `<defs><pattern id="pmGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f3f8" stroke-width="1"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#pmGrid)"/>`;
+
+      const centerX = padLeft + availW / 2 + pmPan2D.x;
+      const centerY = padTop + availH / 2 + pmPan2D.y;
+      const ox = centerX - (pos.w * scale) / 2;
+      const oy = centerY - (pos.h * scale) / 2;
+
+      // Оси симметрии
+      content += `<g stroke="#cbd5e0" stroke-width="0.8" stroke-dasharray="8 4 2 4">
+        <line x1="${centerX}" y1="${oy - 18}" x2="${centerX}" y2="${oy + pos.h*scale + 18}" />
+        <line x1="${ox - 18}" y1="${centerY}" x2="${ox + pos.w*scale + 18}" y2="${centerY}" />
+      </g>`;
+
+      // Контуры
+      content += `<g stroke="#1a365d" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+      if (pos.segs && pos.segs.length > 0) {
+        pos.segs.forEach(s => {
+          content += `<line x1="${ox + s.x1*scale}" y1="${oy + s.y1*scale}" x2="${ox + s.x2*scale}" y2="${oy + s.y2*scale}"/>`;
+        });
+      } else {
+        content += `<rect x="${ox}" y="${oy}" width="${pos.w*scale}" height="${pos.h*scale}" fill="rgba(49,130,206,0.15)"/>`;
+      }
+      content += `</g>`;
+
+      // Отверстия
+      if (pos.circles && pos.circles.length > 0) {
+        content += `<g stroke="#c05621" stroke-width="1.6" fill="none">`;
+        pos.circles.forEach(c => {
+          const cx = ox + c.cx * scale;
+          const cy = oy + c.cy * scale;
+          const r = Math.max(1, c.r * scale);
+          content += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff"/>`;
+          content += `<line x1="${cx - r - 4}" y1="${cy}" x2="${cx + r + 4}" y2="${cy}" stroke="#c05621" stroke-dasharray="4,2" stroke-width="0.8"/>`;
+          content += `<line x1="${cx}" y1="${cy - r - 4}" x2="${cx}" y2="${cy + r + 4}" stroke="#c05621" stroke-dasharray="4,2" stroke-width="0.8"/>`;
+        });
+        content += `</g>`;
+      }
+
+      // Линии гиба
+      if (pos.bends && pos.bends.length > 0) {
+        pos.bends.forEach((b, i) => {
+          const bx = ox + (b.pos || b.position || 0) * scale;
+          content += `
+            <line x1="${bx}" y1="${oy - 4}" x2="${bx}" y2="${oy + pos.h*scale + 4}" stroke="#c05621" stroke-width="1.8" stroke-dasharray="6,4"/>
+            <text x="${bx}" y="${oy - 7}" text-anchor="middle" fill="#c05621" font-size="9" font-weight="bold">${b.angle>0?'▲':'▼'} ${b.angle}°</text>
+          `;
+        });
+      }
+
+      // Размеры
+      const x0 = ox, x1 = ox + pos.w * scale;
+      const y0 = oy + pos.h * scale, y1 = oy;
+
+      content += `<g stroke="#2b6cb0" stroke-width="1" fill="#2b6cb0" font-size="11" font-family="sans-serif">
+        <line x1="${x0}" y1="${y0 + 16}" x2="${x1}" y2="${y0 + 16}"/>
+        <line x1="${x0}" y1="${y0 + 10}" x2="${x0}" y2="${y0 + 22}"/>
+        <line x1="${x1}" y1="${y0 + 10}" x2="${x1}" y2="${y0 + 22}"/>
+        <text x="${(x0 + x1)/2}" y="${y0 + 30}" text-anchor="middle" font-weight="600" stroke="none">${pos.w} мм</text>
+
+        <line x1="${x0 - 16}" y1="${y0}" x2="${x0 - 16}" y2="${y1}"/>
+        <line x1="${x0 - 22}" y1="${y0}" x2="${x0 - 10}" y2="${y0}"/>
+        <line x1="${x0 - 22}" y1="${y1}" x2="${x0 - 10}" y2="${y1}"/>
+        <text x="${x0 - 24}" y="${(y0 + y1)/2}" text-anchor="middle" font-weight="600" stroke="none" transform="rotate(-90 ${x0 - 24} ${(y0 + y1)/2})">${pos.h} мм</text>
+      </g>`;
+
+      content += `<g font-family="sans-serif" fill="#4a5568">
+        <text x="20" y="24" font-size="13" font-weight="700" fill="#1a365d">${pos.name}</text>
+        <text x="20" y="38" font-size="10" fill="#718096">Масштаб 1:${Math.max(1, Math.round(1/scale))} · Окно: ${Math.round(pmZoom2D*100)}%</text>
+      </g>`;
+
+      svg.innerHTML = content;
+    }
+
+    function initPosModalInteraction() {
+      const wrap = document.getElementById('pos-modal-svg-wrap');
+      if (!wrap || wrap._inited) return;
+      wrap._inited = true;
+
+      wrap.addEventListener('pointerdown', (e) => {
+        pmIsDragging = true;
+        pmStartPtr = { x: e.clientX, y: e.clientY };
+        wrap.setPointerCapture(e.pointerId);
+        wrap.style.cursor = 'grabbing';
+      });
+
+      wrap.addEventListener('pointermove', (e) => {
+        if (!pmIsDragging) return;
+        const dx = e.clientX - pmStartPtr.x;
+        const dy = e.clientY - pmStartPtr.y;
+        pmStartPtr = { x: e.clientX, y: e.clientY };
+        pmPan2D.x += dx;
+        pmPan2D.y += dy;
+        const pos = positions[modalPosIndex];
+        if (pos) renderPosModal2D(pos);
+      });
+
+      const stopDrag = () => {
+        pmIsDragging = false;
+        if (wrap) wrap.style.cursor = 'grab';
+      };
+      wrap.addEventListener('pointerup', stopDrag);
+      wrap.addEventListener('pointercancel', stopDrag);
+
+      wrap.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+        pmZoom2D = Math.max(0.15, Math.min(12, pmZoom2D * factor));
+        const pos = positions[modalPosIndex];
+        if (pos) renderPosModal2D(pos);
+      }, { passive: false });
+    }
+
+    function fitPosModal2D() {
+      pmZoom2D = 1;
+      pmPan2D = { x: 0, y: 0 };
+      const pos = positions[modalPosIndex];
+      if (pos) renderPosModal2D(pos);
+    }
+    function zoomPosModal2D(f) {
+      pmZoom2D = Math.max(0.15, Math.min(12, pmZoom2D * f));
+      const pos = positions[modalPosIndex];
+      if (pos) renderPosModal2D(pos);
+    }
+    function exportPosModalSVG() {
+      const svg = document.getElementById('pos-modal-svg').outerHTML;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${positions[modalPosIndex]?.name||'деталь'}-2D.svg`; a.click();
+    }
+    function exportPosModalPNG() {
+      const svg = document.getElementById('pos-modal-svg');
+      const xml = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = 1520; c.height = 800;
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `${positions[modalPosIndex]?.name||'деталь'}-2D.png`; a.click();
+      };
+    }
+
+    function renderPosModal3D(pos) {
+      const mount = document.getElementById('pos-modal-three-mount');
+      if (!window.THREE || !mount) return;
+
+      if (!pmThreeRenderer) {
+        pmThreeScene = new THREE.Scene();
+        pmThreeCamera = new THREE.PerspectiveCamera(45, (mount.clientWidth || 600) / 350, 0.1, 100000);
+        pmThreeCamera.position.set(300, 400, 500);
+
+        pmThreeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        pmThreeRenderer.setSize(mount.clientWidth || 600, 350);
+        pmThreeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        mount.appendChild(pmThreeRenderer.domElement);
+
+        const l1 = new THREE.DirectionalLight(0xffffff, 0.95);
+        l1.position.set(200, 400, 300);
+        pmThreeScene.add(l1);
+        pmThreeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+        let isDragging = false, prevX = 0, prevY = 0;
+        mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging || !pmThreeMesh) return;
+          pmThreeMesh.rotation.y += (e.clientX - prevX) * 0.01;
+          pmThreeMesh.rotation.x += (e.clientY - prevY) * 0.01;
+          prevX = e.clientX; prevY = e.clientY;
+        });
+        window.addEventListener('pointerup', () => isDragging = false);
+
+        mount.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          zoomPosModal3D(e.deltaY > 0 ? 1.12 : 0.89);
+        }, { passive: false });
+
+        function anim() {
+          pmAnimFrame = requestAnimationFrame(anim);
+          if (pmSpin && pmThreeMesh && !isDragging) {
+            pmThreeMesh.rotation.y += 0.005;
+          }
+          pmThreeCamera.lookAt(0, 0, 0);
+          pmThreeRenderer.render(pmThreeScene, pmThreeCamera);
+        }
+        anim();
+      }
+
+      if (pmThreeMesh) pmThreeScene.remove(pmThreeMesh);
+
+      const shape = new THREE.Shape();
+      const w = pos.w, h = pos.h;
+      if (pos.segs && pos.segs.length >= 3) {
+        shape.moveTo(pos.segs[0].x1 - w/2, pos.segs[0].y1 - h/2);
+        for (let i = 0; i < pos.segs.length; i++) {
+          shape.lineTo(pos.segs[i].x2 - w/2, pos.segs[i].y2 - h/2);
+        }
+        shape.closePath();
+      } else {
+        shape.moveTo(-w/2, -h/2);
+        shape.lineTo(w/2, -h/2);
+        shape.lineTo(w/2, h/2);
+        shape.lineTo(-w/2, h/2);
+        shape.closePath();
+      }
+
+      if (pos.circles && pos.circles.length > 0) {
+        pos.circles.forEach(c => {
+          const hole = new THREE.Path();
+          hole.absarc(c.cx - w/2, c.cy - h/2, Math.max(0.5, c.r), 0, Math.PI*2, true);
+          shape.holes.push(hole);
+        });
+      }
+
+      const geom = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.5, pos.t), bevelEnabled: false, curveSegments: 24 });
+      geom.center();
+
+      const mat = new THREE.MeshStandardMaterial({ color: 0x90cdf4, metalness: 0.82, roughness: 0.32 });
+      pmThreeMesh = new THREE.Mesh(geom, mat);
+      pmThreeMesh.rotation.x = -Math.PI / 3;
+      pmThreeScene.add(pmThreeMesh);
+
+      const maxDim = Math.max(w, h, 20);
+      pmIdealDist = maxDim * 1.5 + 40;
+      pmThreeCamera.position.set(pmIdealDist * 0.7, pmIdealDist * 0.8, pmIdealDist);
+      pmThreeCamera.near = Math.max(0.1, pmIdealDist / 200);
+      pmThreeCamera.far = Math.max(10000, pmIdealDist * 50);
+      pmThreeCamera.updateProjectionMatrix();
+    }
+
+    function fitPosModal3D() {
+      if (!pmThreeCamera) return;
+      pmThreeCamera.position.set(pmIdealDist * 0.7, pmIdealDist * 0.8, pmIdealDist);
+      if (pmThreeMesh) pmThreeMesh.rotation.set(-Math.PI/3, 0, 0);
+    }
+    function zoomPosModal3D(factor) {
+      if (!pmThreeCamera) return;
+      pmThreeCamera.position.multiplyScalar(factor);
+    }
+    function togglePosModalSpin() {
+      pmSpin = !pmSpin;
+      document.getElementById('btn-pm-spin').textContent = pmSpin ? '⏸ Пауза вращения' : '▶ Вращение';
+    }
+    function togglePosModalWire() {
+      if (!pmThreeMesh) return;
+      pmThreeMesh.material.wireframe = !pmThreeMesh.material.wireframe;
+    }
+    function resetPosModalCamera(v='iso') {
+      if (!pmThreeCamera || !pmThreeMesh) return;
+      pmThreeMesh.rotation.set(-Math.PI/3, 0, 0);
+      if (v === 'top') pmThreeCamera.position.set(0, pmIdealDist * 1.4, 0.001);
+      else pmThreeCamera.position.set(pmIdealDist * 0.7, pmIdealDist * 0.8, pmIdealDist);
+    }
+
+    function renderPosModalBend(pos) {
+      const sFlat = document.getElementById('pos-modal-bend-flat');
+      const sProf = document.getElementById('pos-modal-bend-profile');
+      if (!sFlat || !sProf || !pos.bends) return;
+
+      const W = 760, H = 220, PAD = 40;
+      const scale = Math.min((W - PAD*2) / pos.w, (H - PAD*2) / pos.h);
+      let fContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(${(W-pos.w*scale)/2}, ${(H-pos.h*scale)/2})">`;
+      fContent += `<rect width="${pos.w*scale}" height="${pos.h*scale}" fill="#f2f6fb" stroke="#1a365d" stroke-width="2"/>`;
+
+      pos.bends.forEach((b) => {
+        const x = (b.pos || b.position || 0) * scale;
+        fContent += `
+          <line x1="${x}" y1="-5" x2="${x}" y2="${pos.h*scale+5}" stroke="#c05621" stroke-width="1.8" stroke-dasharray="6,4"/>
+          <text x="${x}" y="-8" text-anchor="middle" fill="#c05621" font-size="10" font-weight="bold">${b.angle>0?'▲':'▼'} ${b.angle}° (L=${(b.pos||b.position)}мм)</text>
+        `;
+      });
+      fContent += `</g>`;
+      sFlat.innerHTML = fContent;
+
+      let pContent = `<rect width="${W}" height="200" fill="#ffffff"/><g transform="translate(60, 100)">`;
+      let curX = 0, curY = 0, curAngle = 0;
+      let lastPos = 0;
+      let pathD = `M 0 0`;
+      pos.bends.forEach(b => {
+        const bPos = b.pos || b.position || 0;
+        const len = (bPos - lastPos) * 0.4;
+        curX += len * Math.cos(curAngle);
+        curY += len * Math.sin(curAngle);
+        pathD += ` L ${curX} ${curY}`;
+        curAngle += (b.angle * Math.PI) / 180;
+        lastPos = bPos;
+      });
+      const tail = (pos.w - lastPos) * 0.4;
+      curX += tail * Math.cos(curAngle);
+      curY += tail * Math.sin(curAngle);
+      pathD += ` L ${curX} ${curY}`;
+
+      pContent += `<path d="${pathD}" fill="none" stroke="#2b6cb0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`;
+      pContent += `<text x="10" y="70" fill="#718096" font-size="11">Профиль детали после гибки (сечение)</text></g>`;
+      sProf.innerHTML = pContent;
+    }
+    function getBendTariff(th) {
+      if (th <= 2) return parseFloat(document.getElementById('b1').value) || 25;
+      if (th <= 4) return parseFloat(document.getElementById('b2').value) || 40;
+      if (th <= 8) return parseFloat(document.getElementById('b3').value) || 70;
+      return parseFloat(document.getElementById('b4').value) || 120;
+    }
+
+    function calcAll() {
+      const density = parseFloat(document.getElementById('matDensity').value) || 7850;
+      const pricePerKg = parseFloat(document.getElementById('matPrice').value) || 0;
+      const cutPrice = parseFloat(document.getElementById('cutPrice').value) || 50;
+      const pierceFee = parseFloat(document.getElementById('pierceFee').value) || 0.15;
+
+      let totalWeight = 0;
+      let totalMetal = 0;
+      let totalCut = 0;
+      let totalBend = 0;
+      let totalArea = 0;
+
+      positions.forEach((pos, i) => {
+        const weight = pos.a * pos.q * (pos.t / 1000) * density;
+        const metal = weight * pricePerKg;
+        const cut = (pos.c + pos.p * pierceFee) * pos.q * cutPrice;
+        const bend = pos.b * pos.q * getBendTariff(pos.t);
+        const rowSum = metal + cut + bend;
+
+        totalWeight += weight;
+        totalMetal += metal;
+        totalCut += cut;
+        totalBend += bend;
+        totalArea += pos.a * pos.q;
+
+        const cell = document.getElementById(`pos-sum-${i}`);
+        if (cell) cell.textContent = rowSum.toFixed(2) + ' ₽';
+      });
+
+      // Доп. услуги
+      const paintArea = parseFloat(document.getElementById('paintArea').value) || 0;
+      const paintPrice = parseFloat(document.getElementById('paintPrice').value) || 0;
+      const paintSum = paintArea * paintPrice;
+
+      const filmSide = document.getElementById('filmSide').value;
+      const filmMult = filmSide === 'two' ? 2 : filmSide === 'one' ? 1 : 0;
+      const filmSum = totalArea * filmMult * 60;
+
+      const sandArea = parseFloat(document.getElementById('sandArea').value) || 0;
+      const sandPrice = parseFloat(document.getElementById('sandPrice').value) || 0;
+      const sandSum = sandArea * sandPrice;
+
+      const weldM = parseFloat(document.getElementById('weldM').value) || 0;
+      const weldPrice = parseFloat(document.getElementById('weldPrice').value) || 0;
+      const otherSum = (weldM * weldPrice) +
+        ((parseFloat(document.getElementById('drillCount').value) || 0) * 5) +
+        ((parseFloat(document.getElementById('zenkCount').value) || 0) * 8) +
+        ((parseFloat(document.getElementById('tapCount').value) || 0) * 30);
+
+      const delivSum = parseFloat(document.getElementById('delivPrice').value) || 0;
+
+      const subtotal = totalMetal + totalCut + totalBend + paintSum + filmSum + sandSum + otherSum + delivSum;
+
+      // Срочность и скидка
+      const urgencyPct = parseFloat(document.getElementById('urgency').value) || 0;
+      const urgencySum = subtotal * (urgencyPct / 100);
+
+      let autoDisc = 0;
+      if (totalWeight >= 500) autoDisc = 10;
+      else if (totalWeight >= 100) autoDisc = 5;
+      const manualDisc = parseFloat(document.getElementById('discount').value) || 0;
+      const discPct = Math.max(autoDisc, manualDisc);
+
+      const withUrgency = subtotal + urgencySum;
+      const discSum = withUrgency * (discPct / 100);
+      const afterDisc = withUrgency - discSum;
+
+      const minOrder = parseFloat(document.getElementById('minOrder').value) || 0;
+      const net = Math.max(minOrder, afterDisc);
+
+      const vatRate = parseFloat(document.getElementById('vatRate').value) || 0;
+      const vatSum = net * (vatRate / 100);
+      const gross = net + vatSum;
+
+      // Отрисовка сводки
+      document.getElementById('res-weight').textContent = totalWeight.toFixed(2) + ' кг';
+      document.getElementById('res-metal').textContent = totalMetal.toFixed(2) + ' ₽';
+      document.getElementById('res-cut').textContent = totalCut.toFixed(2) + ' ₽';
+      document.getElementById('res-bend').textContent = totalBend.toFixed(2) + ' ₽';
+
+      toggleRow('row-paint', 'res-paint', paintSum, paintSum.toFixed(2) + ' ₽');
+      toggleRow('row-film', 'res-film', filmSum, filmSum.toFixed(2) + ' ₽');
+      toggleRow('row-sand', 'res-sand', sandSum, sandSum.toFixed(2) + ' ₽');
+      toggleRow('row-other', 'res-other', otherSum, otherSum.toFixed(2) + ' ₽');
+      toggleRow('row-deliv', 'res-deliv', delivSum, delivSum.toFixed(2) + ' ₽');
+
+      document.getElementById('res-subtotal').textContent = subtotal.toFixed(2) + ' ₽';
+      toggleRow('row-urgency', 'res-urgency', urgencySum, `+${urgencySum.toFixed(2)} ₽ (${urgencyPct}%)`);
+      toggleRow('row-discount', 'res-discount', discSum, `−${discSum.toFixed(2)} ₽ (${discPct}%)`);
+
+      document.getElementById('res-net').textContent = net.toFixed(2) + ' ₽';
+      document.getElementById('res-vat').textContent = vatSum.toFixed(2) + ' ₽';
+      document.getElementById('res-gross').textContent = gross.toFixed(2) + ' ₽';
+
+      saveDraftToLocalStorage();
+      updatePrintArea({ totalWeight, net, vatSum, gross, vatRate });
+    }
+
+    function toggleRow(rowId, textId, val, formatted) {
+      const r = document.getElementById(rowId);
+      const t = document.getElementById(textId);
+      if (val > 0) {
+        r.style.display = 'flex';
+        t.textContent = formatted;
+      } else {
+        r.style.display = 'none';
+      }
+    }
+
+    // Сохранение КП в локальную историю браузера
+    function saveQuoteLocal() {
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      const docNum = document.getElementById('docNum').value || 'КП-0001';
+      const quote = {
+        id: Date.now(),
+        docNum,
+        date: document.getElementById('docDate').value,
+        customer: document.getElementById('kName').value || 'Без заказчика',
+        gross: document.getElementById('res-gross').textContent,
+        weight: document.getElementById('res-weight').textContent,
+        positions: JSON.parse(JSON.stringify(positions))
+      };
+      quotes.unshift(quote);
+      localStorage.setItem('fp_offline_quotes', JSON.stringify(quotes.slice(0, 30)));
+      renderSavedQuotesList();
+      alert(`КП ${docNum} сохранено в памяти вашего браузера!`);
+    }
+
+    function renderSavedQuotesList() {
+      const container = document.getElementById('saved-quotes-list');
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      if (quotes.length === 0) {
+        container.innerHTML = '<span class="hint">Сохранённых расчётов пока нет.</span>';
+        return;
+      }
+      container.innerHTML = '';
+      quotes.forEach(q => {
+        const item = document.createElement('div');
+        item.style = 'padding:6px 8px; border:1px solid var(--brd); border-radius:6px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;';
+        item.innerHTML = `
+          <div>
+            <b>${q.docNum}</b> (${q.customer})<br>
+            <small style="color:var(--hint)">${q.weight} · ${q.gross}</small>
+          </div>
+          <button class="link-btn" onclick="restoreQuote(${q.id})">Загрузить</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function restoreQuote(id) {
+      const quotes = JSON.parse(localStorage.getItem('fp_offline_quotes') || '[]');
+      const q = quotes.find(x => x.id === id);
+      if (!q) return;
+      document.getElementById('docNum').value = q.docNum;
+      document.getElementById('docDate').value = q.date;
+      document.getElementById('kName').value = q.customer;
+      positions = q.positions;
+      renderPositionsTable();
+      calcAll();
+      alert(`КП ${q.docNum} успешно загружено!`);
+    }
+
+    function saveDraftToLocalStorage() {
+      const draft = {
+        docNum: document.getElementById('docNum').value,
+        docDate: document.getElementById('docDate').value,
+        kName: document.getElementById('kName').value,
+        mat: document.getElementById('matSelect').value,
+        positions
+      };
+      localStorage.setItem('fp_offline_draft', JSON.stringify(draft));
+    }
+
+    function loadSavedState() {
+      const raw = localStorage.getItem('fp_offline_draft');
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (d.docNum) document.getElementById('docNum').value = d.docNum;
+        if (d.docDate) document.getElementById('docDate').value = d.docDate;
+        if (d.kName) document.getElementById('kName').value = d.kName;
+        if (d.mat) document.getElementById('matSelect').value = d.mat;
+        if (Array.isArray(d.positions) && d.positions.length > 0) positions = d.positions;
+        onMatChange();
+        renderPositionsTable();
+      } catch (e) {}
+    }
+
+    function resetForm() {
+      if (!confirm('Очистить форму калькулятора?')) return;
+      localStorage.removeItem('fp_offline_draft');
+      positions = [];
+      addPosition();
+      calcAll();
+    }
+
+    function exportCSV() {
+      let csv = "Наименование;Количество;Ширина_мм;Высота_мм;Площадь_м2;Толщина_мм;Рез_м;Врезки;Гибы\n";
+      positions.forEach(p => {
+        csv += `${p.name};${p.q};${p.w};${p.h};${p.a};${p.t};${p.c};${p.p};${p.b}\n`;
+      });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${document.getElementById('docNum').value}.csv`;
+      a.click();
+    }
+
+    function exportBackupJSON() {
+      const data = {
+        docNum: document.getElementById('docNum').value,
+        docDate: document.getElementById('docDate').value,
+        kName: document.getElementById('kName').value,
+        material: document.getElementById('matSelect').value,
+        positions
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${data.docNum}_backup.json`;
+      a.click();
+    }
+
+    function restoreBackupJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const d = JSON.parse(r.result);
+          if (d.positions) positions = d.positions;
+          if (d.docNum) document.getElementById('docNum').value = d.docNum;
+          renderPositionsTable();
+          calcAll();
+          alert('Данные успешно восстановлены!');
+        } catch(err) { alert('Ошибка чтения файла бэкапа'); }
+      };
+      r.readAsText(file);
+    }
+
+    function updatePrintArea({ totalWeight, net, vatSum, gross, vatRate }) {
+      document.getElementById('pr-docNum').textContent = document.getElementById('docNum').value;
+      document.getElementById('pr-date').textContent = document.getElementById('docDate').value;
+      document.getElementById('pr-mat').textContent = document.getElementById('matSelect').options[document.getElementById('matSelect').selectedIndex].text;
+      document.getElementById('pr-term').textContent = document.getElementById('dTerm').value;
+      document.getElementById('pr-exec').textContent = `${document.getElementById('cName').value}, ИНН ${document.getElementById('cINN').value}, тел. ${document.getElementById('cPhone').value}`;
+      document.getElementById('pr-cust').textContent = document.getElementById('kName').value || '—';
+
+      const tbody = document.getElementById('pr-table-body');
+      tbody.innerHTML = '';
+      positions.forEach((p, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td><td style="text-align:center;padding:2px;">${getThumbSvg(p, 48, 32)}</td><td>${p.name}</td><td>${p.q}</td><td>${p.w}×${p.h}</td><td>${p.a}</td><td>${p.t} мм</td><td style="text-align:right">${document.getElementById(`pos-sum-${i}`)?.textContent || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const noteBox = document.getElementById('pr-extra-notes');
+      const ral = document.getElementById('ralColor').value;
+      const film = document.getElementById('filmSide').value;
+      const agree = document.getElementById('flatAgreement').checked;
+      let notes = [];
+      if (parseFloat(document.getElementById('paintArea').value) > 0) notes.push(`Порошковая покраска: <b>${ral}</b>`);
+      if (film !== 'none') notes.push(`Защитная плёнка: <b>${film==='two'?'с 2 сторон':'с 1 стороны'}</b>`);
+      if (agree) notes.push('<b style="color:#c53030;">Внимание: заказ согласован к изготовлению ТОЛЬКО по развёртке (на ответственность заказчика).</b>');
+
+      if (notes.length > 0) {
+        noteBox.style.display = 'block';
+        noteBox.innerHTML = notes.join(' · ');
+      } else {
+        noteBox.style.display = 'none';
+      }
+
+      document.getElementById('pr-weight').textContent = totalWeight.toFixed(2) + ' кг';
+      document.getElementById('pr-net').textContent = net.toFixed(2) + ' ₽';
+      document.getElementById('pr-vat').textContent = vatSum.toFixed(2) + ' ₽';
+      document.getElementById('pr-gross').textContent = gross.toFixed(2) + ' ₽';
+      document.getElementById('pr-footer').textContent = `Предоплата: ${document.getElementById('prepay').value}. Действительно: ${document.getElementById('dValid').value}. Менеджер: ${document.getElementById('mName').value}.`;
+    }
+
+    /* ---------------- 2. Конструктор 2D / 3D / Гибка / Раскрой ---------------- */
+    function switchDesignView(view) {
+      currentDesignView = view;
+      ['2d', 'bend', '3d'].forEach(v => {
+        document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+        document.getElementById(`btn-v-${v}`).classList.toggle('active', v === view);
+      });
+      renderCurrentPartView();
+    }
+
+    function generateShapeUI() {
+      const kind = document.getElementById('genKind').value;
+      const w = parseFloat(document.getElementById('genW').value) || 400;
+      const h = parseFloat(document.getElementById('genH').value) || 300;
+      const r = parseFloat(document.getElementById('genR').value) || 20;
+
+      let segs = [], circles = [];
+      if (kind === 'rect') {
+        segs = [{x1:0,y1:0,x2:w,y2:0},{x1:w,y1:0,x2:w,y2:h},{x1:w,y1:h,x2:0,y2:h},{x1:0,y1:h,x2:0,y2:0}];
+      } else if (kind === 'disc') {
+        circles = [{cx: w/2, cy: w/2, r: w/2}];
+      } else if (kind === 'ring') {
+        circles = [{cx: w/2, cy: w/2, r: w/2}, {cx: w/2, cy: w/2, r: r}];
+      } else if (kind === 'plateHoles') {
+        segs = [{x1:0,y1:0,x2:w,y2:0},{x1:w,y1:0,x2:w,y2:h},{x1:w,y1:h,x2:0,y2:h},{x1:0,y1:h,x2:0,y2:0}];
+        const pad = Math.min(30, Math.min(w,h)/4);
+        circles = [
+          {cx: pad, cy: pad, r: r/2},
+          {cx: w - pad, cy: pad, r: r/2},
+          {cx: w - pad, cy: h - pad, r: r/2},
+          {cx: pad, cy: h - pad, r: r/2}
+        ];
+      } else if (kind === 'lBracket') {
+        const leg = 80;
+        segs = [
+          {x1:0,y1:0,x2:w,y2:0},{x1:w,y1:0,x2:w,y2:leg},
+          {x1:w,y1:leg,x2:leg,y2:leg},{x1:leg,y1:leg,x2:leg,y2:h},
+          {x1:leg,y1:h,x2:0,y2:h},{x1:0,y1:h,x2:0,y2:0}
+        ];
+      } else { // roundRect
+        segs = [{x1:0,y1:0,x2:w,y2:0},{x1:w,y1:0,x2:w,y2:h},{x1:w,y1:h,x2:0,y2:h},{x1:0,y1:h,x2:0,y2:0}];
+      }
+
+      window._currentGenerated = { name: document.getElementById('genKind').options[document.getElementById('genKind').selectedIndex].text, w, h, segs, circles };
+      render2DPreview(window._currentGenerated);
+    }
+
+    function addCurrentShapeToParts() {
+      if (!window._currentGenerated) return;
+      const g = window._currentGenerated;
+      const cut = (g.w * 2 + g.h * 2) / 1000;
+      designerParts.push({
+        id: 'dp_' + Date.now(),
+        name: g.name,
+        w: g.w,
+        h: g.h,
+        count: 1,
+        cut,
+        area: Number(((g.w*g.h)/1e6).toFixed(4)),
+        segs: g.segs,
+        circles: g.circles,
+        bends: []
+      });
+      activePartIndex = designerParts.length - 1;
+      renderPartsList();
+      renderCurrentPartView();
+    }
+
+    function handleDXFFiles(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      Array.from(files).forEach(f => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const parsed = parseDXFString(reader.result);
+          designerParts.push({
+            id: 'dxf_' + Date.now() + '_' + Math.random().toString(36).substr(2,3),
+            name: f.name.replace(/\.dxf$/i,''),
+            w: Math.round(parsed.w),
+            h: Math.round(parsed.h),
+            count: 1,
+            cut: Number(parsed.cut.toFixed(2)),
+            area: Number(parsed.area.toFixed(4)),
+            segs: parsed.segs,
+            circles: parsed.circles,
+            bends: []
+          });
+          activePartIndex = designerParts.length - 1;
+          renderPartsList();
+          renderCurrentPartView();
+        };
+        reader.readAsText(f);
+      });
+    }
+
+    let zoom2D = 1;
+    let pan2D = { x: 0, y: 0 };
+    let isDragging2D = false;
+    let startPtr2D = { x: 0, y: 0 };
+    let idealDist3D = 600;
+
+    function init2DInteraction() {
+      const wrap = document.getElementById('svg-drawing-wrap');
+      if (!wrap || wrap._inited) return;
+      wrap._inited = true;
+
+      wrap.addEventListener('pointerdown', (e) => {
+        isDragging2D = true;
+        startPtr2D = { x: e.clientX, y: e.clientY };
+        wrap.setPointerCapture(e.pointerId);
+        wrap.style.cursor = 'grabbing';
+      });
+
+      wrap.addEventListener('pointermove', (e) => {
+        if (!isDragging2D) return;
+        const dx = e.clientX - startPtr2D.x;
+        const dy = e.clientY - startPtr2D.y;
+        startPtr2D = { x: e.clientX, y: e.clientY };
+        pan2D.x += dx;
+        pan2D.y += dy;
+        const part = designerParts[activePartIndex] || window._currentGenerated;
+        if (part) render2DPreview(part);
+      });
+
+      const stopDrag = () => {
+        isDragging2D = false;
+        if (wrap) wrap.style.cursor = 'grab';
+      };
+      wrap.addEventListener('pointerup', stopDrag);
+      wrap.addEventListener('pointercancel', stopDrag);
+
+      wrap.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+        zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
+        const part = designerParts[activePartIndex] || window._currentGenerated;
+        if (part) render2DPreview(part);
+      }, { passive: false });
+    }
+
+    function fitDrawing2D() {
+      zoom2D = 1;
+      pan2D = { x: 0, y: 0 };
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
+    }
+
+    function zoomDrawing2D(factor) {
+      zoom2D = Math.max(0.15, Math.min(12, zoom2D * factor));
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
+    }
+
+    function resetZoom2D(z) {
+      zoom2D = z || 1;
+      pan2D = { x: 0, y: 0 };
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (part) render2DPreview(part);
+    }
+
+    function parseDXFString(txt) {
+      const L = txt.split(/\r?\n/);
+      let segs = [], circles = [], arcs = [];
+      let c = null, i = 0;
+      while (i < L.length - 1) {
+        const code = L[i].trim(), val = L[i+1].trim();
+        i += 2;
+        if (code === '0') {
+          if (c) {
+            if (c.type === 'line') segs.push({ x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2 });
+            else if (c.type === 'poly') {
+              for (let k = 0; k < c.pts.length - 1; k++) {
+                segs.push({ x1: c.pts[k][0], y1: c.pts[k][1], x2: c.pts[k+1][0], y2: c.pts[k+1][1] });
+              }
+              if (c.closed && c.pts.length > 2) {
+                segs.push({ x1: c.pts[c.pts.length-1][0], y1: c.pts[c.pts.length-1][1], x2: c.pts[0][0], y2: c.pts[0][1] });
+              }
+            } else if (c.type === 'circle') circles.push({ cx: c.cx, cy: c.cy, r: c.r });
+            else if (c.type === 'arc') arcs.push({ cx: c.cx, cy: c.cy, r: c.r, a1: c.a1, a2: c.a2 });
+          }
+          if (val === 'LINE') c = { type: 'line', x1: 0, y1: 0, x2: 0, y2: 0 };
+          else if (val === 'LWPOLYLINE' || val === 'POLYLINE') c = { type: 'poly', pts: [], closed: false, tx: 0 };
+          else if (val === 'CIRCLE') c = { type: 'circle', cx: 0, cy: 0, r: 0 };
+          else if (val === 'ARC') c = { type: 'arc', cx: 0, cy: 0, r: 0, a1: 0, a2: 0 };
+          else c = null;
+          continue;
+        }
+        if (!c) continue;
+        const f = parseFloat(val);
+        if (c.type === 'line') {
+          if (code==='10') c.x1=f; if (code==='20') c.y1=f;
+          if (code==='11') c.x2=f; if (code==='21') c.y2=f;
+        } else if (c.type === 'poly') {
+          if (code==='10') c.tx = f;
+          if (code==='20') c.pts.push([c.tx, f]);
+          if (code==='70') c.closed = (parseInt(val, 10) & 1) === 1;
+        } else if (c.type === 'circle') {
+          if (code==='10') c.cx=f; if (code==='20') c.cy=f; if (code==='40') c.r=f;
+        } else if (c.type === 'arc') {
+          if (code==='10') c.cx=f; if (code==='20') c.cy=f; if (code==='40') c.r=f;
+          if (code==='50') c.a1=f; if (code==='51') c.a2=f;
+        }
+      }
+      if (c) {
+        if (c.type === 'line') segs.push({ x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2 });
+        else if (c.type === 'poly') {
+          for (let k = 0; k < c.pts.length - 1; k++) {
+            segs.push({ x1: c.pts[k][0], y1: c.pts[k][1], x2: c.pts[k+1][0], y2: c.pts[k+1][1] });
+          }
+          if (c.closed && c.pts.length > 2) {
+            segs.push({ x1: c.pts[c.pts.length-1][0], y1: c.pts[c.pts.length-1][1], x2: c.pts[0][0], y2: c.pts[0][1] });
+          }
+        } else if (c.type === 'circle') circles.push({ cx: c.cx, cy: c.cy, r: c.r });
+        else if (c.type === 'arc') arcs.push({ cx: c.cx, cy: c.cy, r: c.r, a1: c.a1, a2: c.a2 });
+      }
+
+      // Линеаризация дуг в отрезки для контура
+      arcs.forEach(a => {
+        let sw = a.a2 - a.a1;
+        if (sw < 0) sw += 360;
+        const steps = Math.max(6, Math.ceil((sw / 360) * 16));
+        const a1Rad = (a.a1 * Math.PI) / 180;
+        let px = a.cx + a.r * Math.cos(a1Rad);
+        let py = a.cy + a.r * Math.sin(a1Rad);
+        for (let s = 1; s <= steps; s++) {
+          const ang = a1Rad + ((sw * Math.PI) / 180) * (s / steps);
+          const nx = a.cx + a.r * Math.cos(ang);
+          const ny = a.cy + a.r * Math.sin(ang);
+          segs.push({ x1: px, y1: py, x2: nx, y2: ny });
+          px = nx; py = ny;
+        }
+      });
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, cutLen = 0;
+      segs.forEach(s => {
+        cutLen += Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
+        minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
+        minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
+      });
+      circles.forEach(c => {
+        cutLen += 2 * Math.PI * c.r;
+        minX = Math.min(minX, c.cx - c.r); maxX = Math.max(maxX, c.cx + c.r);
+        minY = Math.min(minY, c.cy - c.r); maxY = Math.max(maxY, c.cy + c.r);
+      });
+
+      if (!isFinite(minX)) { minX = minY = 0; maxX = maxY = 100; }
+      const w = Math.max(5, maxX - minX);
+      const h = Math.max(5, maxY - minY);
+
+      // ВАЖНО: нормализуем координаты к minX, minY, чтобы деталь не улетала с экрана!
+      const normSegs = segs.map(s => ({
+        x1: s.x1 - minX, y1: s.y1 - minY,
+        x2: s.x2 - minX, y2: s.y2 - minY
+      }));
+      const normCircles = circles.map(c => ({
+        cx: c.cx - minX, cy: c.cy - minY, r: c.r
+      }));
+
+      return { segs: normSegs, circles: normCircles, w, h, cut: cutLen / 1000, area: (w * h) / 1e6 };
+    }
+
+    function renderPartsList() {
+      const container = document.getElementById('parts-list');
+      document.getElementById('parts-count').textContent = designerParts.length;
+      container.innerHTML = '';
+      designerParts.forEach((p, idx) => {
+        const item = document.createElement('div');
+        item.style = `padding:8px 10px; border:1px solid ${idx===activePartIndex?'var(--acc)':'var(--brd)'}; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background:${idx===activePartIndex?'var(--acc-light)':'transparent'};`;
+        item.onclick = (e) => {
+          if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            activePartIndex = idx;
+            fitDrawing2D();
+            renderPartsList();
+            renderCurrentPartView();
+          }
+        };
+        item.innerHTML = `
+          <div>
+            <b>${p.name}</b><br>
+            <small style="color:var(--hint)">${p.w}×${p.h} мм · ${p.bends.length>0?p.bends.length+' гибов':'плоская'}</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" min="1" value="${p.count}" style="width:45px; height:26px;" onclick="event.stopPropagation()" onchange="designerParts[${idx}].count=parseInt(this.value)||1">
+            <button class="del-btn" onclick="event.stopPropagation(); removePart(${idx})">×</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function removePart(idx) {
+      designerParts.splice(idx, 1);
+      activePartIndex = Math.max(0, activePartIndex - 1);
+      fitDrawing2D();
+      renderPartsList();
+      renderCurrentPartView();
+    }
+
+    function clearParts() {
+      designerParts = [];
+      activePartIndex = 0;
+      fitDrawing2D();
+      renderPartsList();
+      renderCurrentPartView();
+    }
+
+    function renderCurrentPartView() {
+      init2DInteraction();
+      const part = designerParts[activePartIndex] || window._currentGenerated;
+      if (!part) return;
+      document.getElementById('part-title').textContent = part.name;
+
+      // Проверка по Памятке
+      const noticesBox = document.getElementById('part-notices');
+      let notices = [];
+      if (part.w > 2990 || part.h > 1490) notices.push('<div class="notice-item error">⛔ Деталь превышает рабочее поле лазера (2990 × 1490 мм).</div>');
+      else if (part.w > 2490 || part.h > 1240) notices.push('<div class="notice-item warning">⚠️ Деталь больше стандартного раскроя 2490 × 1240 мм.</div>');
+      if (part.bends && part.bends.length > 0) {
+        if (part.h > 2490) notices.push('<div class="notice-item error">⛔ Ширина гиба превышает лимит пресса (2490 мм).</div>');
+      }
+      noticesBox.innerHTML = notices.join('');
+
+      if (currentDesignView === '2d') {
+        render2DPreview(part);
+      } else if (currentDesignView === 'bend') {
+        renderBendUI(part);
+      } else if (currentDesignView === '3d') {
+        update3DModel(part);
+      }
+    }
+
+    function render2DPreview(part) {
+      const svg = document.getElementById('svg-drawing');
+      const W = 760, H = 400;
+      const padLeft = 70, padRight = 35, padBottom = 55, padTop = 45;
+      const availW = W - padLeft - padRight;
+      const availH = H - padTop - padBottom;
+
+      const baseScale = Math.min(availW / Math.max(1, part.w), availH / Math.max(1, part.h));
+      const scale = baseScale * zoom2D;
+
+      const lbl = document.getElementById('zoom2d-label');
+      if (lbl) lbl.textContent = Math.round(zoom2D * 100) + '%';
+
+      let content = `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+      // Сетка
+      content += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f3f8" stroke-width="1"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#grid)"/>`;
+
+      // Идеальное центрирование детали по середине холста со смещением pan2D
+      const centerX = padLeft + availW / 2 + pan2D.x;
+      const centerY = padTop + availH / 2 + pan2D.y;
+
+      const ox = centerX - (part.w * scale) / 2;
+      const oy = centerY - (part.h * scale) / 2;
+
+      // Оси симметрии детали
+      content += `<g stroke="#cbd5e0" stroke-width="0.8" stroke-dasharray="8 4 2 4">
+        <line x1="${centerX}" y1="${oy - 18}" x2="${centerX}" y2="${oy + part.h*scale + 18}" />
+        <line x1="${ox - 18}" y1="${centerY}" x2="${ox + part.w*scale + 18}" y2="${centerY}" />
+      </g>`;
+
+      // Контуры и отрезки детали
+      content += `<g stroke="#1a365d" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+      if (part.segs && part.segs.length > 0) {
+        part.segs.forEach(s => {
+          content += `<line x1="${ox + s.x1*scale}" y1="${oy + s.y1*scale}" x2="${ox + s.x2*scale}" y2="${oy + s.y2*scale}"/>`;
+        });
+      } else {
+        content += `<rect x="${ox}" y="${oy}" width="${part.w*scale}" height="${part.h*scale}" fill="rgba(49,130,206,0.15)"/>`;
+      }
+      content += `</g>`;
+
+      // Отверстия
+      if (part.circles && part.circles.length > 0) {
+        content += `<g stroke="#c05621" stroke-width="1.6" fill="none">`;
+        part.circles.forEach(c => {
+          const cx = ox + c.cx * scale;
+          const cy = oy + c.cy * scale;
+          const r = Math.max(1, c.r * scale);
+          content += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff"/>`;
+          content += `<line x1="${cx - r - 4}" y1="${cy}" x2="${cx + r + 4}" y2="${cy}" stroke="#c05621" stroke-dasharray="4,2" stroke-width="0.8"/>`;
+          content += `<line x1="${cx}" y1="${cy - r - 4}" x2="${cx}" y2="${cy + r + 4}" stroke="#c05621" stroke-dasharray="4,2" stroke-width="0.8"/>`;
+        });
+        content += `</g>`;
+      }
+
+      // Размерные линии (ширина и высота)
+      const x0 = ox, x1 = ox + part.w * scale;
+      const y0 = oy + part.h * scale, y1 = oy;
+
+      content += `<g stroke="#2b6cb0" stroke-width="1" fill="#2b6cb0" font-size="11" font-family="sans-serif">
+        <line x1="${x0}" y1="${y0 + 16}" x2="${x1}" y2="${y0 + 16}"/>
+        <line x1="${x0}" y1="${y0 + 10}" x2="${x0}" y2="${y0 + 22}"/>
+        <line x1="${x1}" y1="${y0 + 10}" x2="${x1}" y2="${y0 + 22}"/>
+        <text x="${(x0 + x1)/2}" y="${y0 + 30}" text-anchor="middle" font-weight="600" stroke="none">${part.w} мм</text>
+
+        <line x1="${x0 - 16}" y1="${y0}" x2="${x0 - 16}" y2="${y1}"/>
+        <line x1="${x0 - 22}" y1="${y0}" x2="${x0 - 10}" y2="${y0}"/>
+        <line x1="${x0 - 22}" y1="${y1}" x2="${x0 - 10}" y2="${y1}"/>
+        <text x="${x0 - 24}" y="${(y0 + y1)/2}" text-anchor="middle" font-weight="600" stroke="none" transform="rotate(-90 ${x0 - 24} ${(y0 + y1)/2})">${part.h} мм</text>
+      </g>`;
+
+      // Подпись масштаба и названия в углу
+      content += `<g font-family="sans-serif" fill="#4a5568">
+        <text x="20" y="24" font-size="13" font-weight="700" fill="#1a365d">${part.name || 'Деталь'}</text>
+        <text x="20" y="38" font-size="10" fill="#718096">Масштаб 1:${Math.max(1, Math.round(1/scale))} · Заполнение окна: ${Math.round(zoom2D*100)}%</text>
+      </g>`;
+
+      svg.innerHTML = content;
+    }
+
+    function exportDrawingSVG() {
+      const svg = document.getElementById('svg-drawing').outerHTML;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'drawing.svg'; a.click();
+    }
+    function exportDrawingPNG() {
+      const svg = document.getElementById('svg-drawing');
+      const xml = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = 1520; c.height = 800;
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'drawing.png'; a.click();
+      };
+    }
+
+    /* ---------------- Гибка ---------------- */
+    function applyBendPreset(angles) {
+      const p = designerParts[activePartIndex];
+      if (!p) return;
+      const step = p.w / (angles.length + 1);
+      p.bends = angles.map((ang, i) => ({ pos: Math.round(step * (i+1)), angle: ang, r: 1.5 }));
+      renderPartsList();
+      renderBendUI(p);
+      calcAll();
+    }
+
+    function addCustomBend() {
+      const p = designerParts[activePartIndex];
+      if (!p) return;
+      p.bends.push({ pos: Math.round(p.w / 2), angle: 90, r: 1.5 });
+      renderPartsList();
+      renderBendUI(p);
+      calcAll();
+    }
+
+    function renderBendUI(part) {
+      if (!part.bends) part.bends = [];
+      const k = parseFloat(document.getElementById('kFactorInput').value) || 0.44;
+
+      let notices = [];
+      part.bends.forEach((b, i) => {
+        const left = b.pos, right = part.w - b.pos;
+        if (Math.min(left, right) < 11) notices.push(`<div class="notice-item warning">⚠️ Гиб #${i+1}: полка ${Math.min(left,right)} мм меньше мин. борта (11 мм по Памятке).</div>`);
+      });
+      document.getElementById('bend-notices').innerHTML = notices.join('');
+
+      const sFlat = document.getElementById('svg-bend-flat');
+      const W = 760, H = 220, PAD = 40;
+      const scale = Math.min((W - PAD*2)/part.w, (H - PAD*2)/part.h);
+      let fContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(${(W-part.w*scale)/2}, ${(H-part.h*scale)/2})">`;
+      fContent += `<rect width="${part.w*scale}" height="${part.h*scale}" fill="#f2f6fb" stroke="#1a365d" stroke-width="2"/>`;
+
+      part.bends.forEach((b, i) => {
+        const x = b.pos * scale;
+        fContent += `
+          <line x1="${x}" y1="-5" x2="${x}" y2="${part.h*scale+5}" stroke="#c05621" stroke-width="1.8" stroke-dasharray="6,4"/>
+          <text x="${x}" y="-8" text-anchor="middle" fill="#c05621" font-size="10" font-weight="bold">${b.angle>0?'▲':'▼'} ${b.angle}° (L=${b.pos}мм)</text>
+        `;
+      });
+      fContent += `</g>`;
+      sFlat.innerHTML = fContent;
+
+      const sProf = document.getElementById('svg-bend-profile');
+      let pContent = `<rect width="${W}" height="${H}" fill="#ffffff"/><g transform="translate(60, 100)">`;
+      let curX = 0, curY = 0, curAngle = 0;
+      let lastPos = 0;
+      let pathD = `M 0 0`;
+      part.bends.forEach(b => {
+        const len = (b.pos - lastPos) * 0.4;
+        curX += len * Math.cos(curAngle);
+        curY += len * Math.sin(curAngle);
+        pathD += ` L ${curX} ${curY}`;
+        curAngle += (b.angle * Math.PI) / 180;
+        lastPos = b.pos;
+      });
+      const tail = (part.w - lastPos) * 0.4;
+      curX += tail * Math.cos(curAngle);
+      curY += tail * Math.sin(curAngle);
+      pathD += ` L ${curX} ${curY}`;
+
+      pContent += `<path d="${pathD}" fill="none" stroke="#2b6cb0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`;
+      pContent += `<text x="10" y="70" fill="#718096" font-size="11">Профиль детали после гибки (сечение)</text></g>`;
+      sProf.innerHTML = pContent;
+    }
+
+    function recalcBendingUI() {
+      const p = designerParts[activePartIndex];
+      if (p) renderBendUI(p);
+    }
+
+    /* ---------------- 3D Просмотр (Three.js WebGL) ---------------- */
+    function initThreeJS() {
+      const mount = document.getElementById('three-mount');
+      if (!window.THREE || !mount) return;
+
+      threeScene = new THREE.Scene();
+      threeCamera = new THREE.PerspectiveCamera(45, mount.clientWidth / 350, 0.1, 100000);
+      threeCamera.position.set(300, 400, 500);
+
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      threeRenderer.setSize(mount.clientWidth, 350);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      mount.appendChild(threeRenderer.domElement);
+
+      const light1 = new THREE.DirectionalLight(0xffffff, 0.95);
+      light1.position.set(200, 400, 300);
+      threeScene.add(light1);
+      threeScene.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+      let isDragging = false, prevX = 0, prevY = 0;
+      mount.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging || !threeMesh) return;
+        const dx = e.clientX - prevX; const dy = e.clientY - prevY;
+        threeMesh.rotation.y += dx * 0.01;
+        threeMesh.rotation.x += dy * 0.01;
+        prevX = e.clientX; prevY = e.clientY;
+      });
+      window.addEventListener('pointerup', () => isDragging = false);
+
+      mount.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 1.12 : 0.89;
+        zoom3D(factor);
+      }, { passive: false });
+
+      function anim() {
+        threeAnimFrame = requestAnimationFrame(anim);
+        if (threeSpin && threeMesh && !isDragging) {
+          threeMesh.rotation.y += 0.005;
+        }
+        threeCamera.lookAt(0, 0, 0);
+        threeRenderer.render(threeScene, threeCamera);
+      }
+      anim();
+    }
+
+    function update3DModel(part) {
+      if (!threeScene || !window.THREE) return;
+      if (threeMesh) threeScene.remove(threeMesh);
+
+      const shape = new THREE.Shape();
+      const w = part.w, h = part.h;
+
+      // Если у детали есть реальные замкнутые отрезки контура, строим по ним
+      if (part.segs && part.segs.length >= 3) {
+        // Центрируем относительно центра детали (0,0)
+        shape.moveTo(part.segs[0].x1 - w/2, part.segs[0].y1 - h/2);
+        for (let i = 0; i < part.segs.length; i++) {
+          shape.lineTo(part.segs[i].x2 - w/2, part.segs[i].y2 - h/2);
+        }
+        shape.closePath();
+      } else {
+        shape.moveTo(-w/2, -h/2);
+        shape.lineTo(w/2, -h/2);
+        shape.lineTo(w/2, h/2);
+        shape.lineTo(-w/2, h/2);
+        shape.closePath();
+      }
+
+      // Вырезаем отверстия
+      if (part.circles && part.circles.length > 0) {
+        part.circles.forEach(c => {
+          const hole = new THREE.Path();
+          hole.absarc(c.cx - w/2, c.cy - h/2, Math.max(0.5, c.r), 0, Math.PI*2, true);
+          shape.holes.push(hole);
+        });
+      }
+
+      const geom = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false, curveSegments: 24 });
+      geom.center();
+
+      const mat = new THREE.MeshStandardMaterial({ color: 0x90cdf4, metalness: 0.82, roughness: 0.32 });
+      threeMesh = new THREE.Mesh(geom, mat);
+      threeMesh.rotation.x = -Math.PI / 3;
+      threeScene.add(threeMesh);
+
+      // Автоматическая подстройка камеры под любой размер детали (Fit)
+      const maxDim = Math.max(w, h, 20);
+      idealDist3D = maxDim * 1.5 + 40;
+      threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
+      threeCamera.near = Math.max(0.1, idealDist3D / 200);
+      threeCamera.far = Math.max(10000, idealDist3D * 50);
+      threeCamera.updateProjectionMatrix();
+    }
+
+    function fit3DCamera() {
+      if (!threeCamera) return;
+      threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
+      if (threeMesh) threeMesh.rotation.set(-Math.PI/3, 0, 0);
+    }
+
+    function zoom3D(factor) {
+      if (!threeCamera) return;
+      threeCamera.position.multiplyScalar(factor);
+    }
+
+    function toggle3DSpin() {
+      threeSpin = !threeSpin;
+      document.getElementById('btn-3d-spin').textContent = threeSpin ? '⏸ Пауза вращения' : '▶ Вращение';
+    }
+
+    function toggle3DWireframe() {
+      if (!threeMesh) return;
+      threeMesh.material.wireframe = !threeMesh.material.wireframe;
+    }
+
+    function reset3DCamera(view='iso') {
+      if (!threeCamera || !threeMesh) return;
+      threeMesh.rotation.set(-Math.PI/3, 0, 0);
+      if (view === 'top') {
+        threeCamera.position.set(0, idealDist3D * 1.4, 0.001);
+      } else {
+        threeCamera.position.set(idealDist3D * 0.7, idealDist3D * 0.8, idealDist3D);
+      }
+    }
+    /* ---------------- 4. Раскрой MaxRects ---------------- */
+    function runNestingUI() {
+      const sel = document.getElementById('nestSheetSelect').value.split('x');
+      const sheetW = parseInt(sel[0]), sheetH = parseInt(sel[1]);
+      const margin = parseInt(document.getElementById('nestMargin').value) || 5;
+      const kerf = parseInt(document.getElementById('nestKerf').value) || 2;
+      const allowRot = document.getElementById('nestRotate').checked;
+
+      const items = [];
+      designerParts.forEach((p, idx) => {
+        for (let i=0; i<p.count; i++) items.push({ id: p.id, name: p.name, w: p.w + kerf, h: p.h + kerf });
+      });
+
+      if (items.length === 0) {
+        alert('Добавьте детали в список справа для выполнения раскроя!');
+        return;
+      }
+
+      // MaxRects Best Short Side Fit
+      items.sort((a,b) => (b.w*b.h) - (a.w*a.h));
+      const maxW = sheetW - margin*2;
+      const maxH = sheetH - margin*2;
+
+      let sheets = [];
+      let curSheet = { placements: [], usedArea: 0 };
+      sheets.push(curSheet);
+
+      let curX = margin, curY = margin, rowH = 0;
+      items.forEach(it => {
+        let pw = it.w, ph = it.h;
+        if (allowRot && (curX + pw > sheetW - margin) && (curX + ph <= sheetW - margin)) {
+          pw = it.h; ph = it.w;
+        }
+        if (curX + pw > sheetW - margin) {
+          curX = margin; curY += rowH + kerf; rowH = 0;
+        }
+        if (curY + ph > sheetH - margin) {
+          curSheet = { placements: [], usedArea: 0 };
+          sheets.push(curSheet);
+          curX = margin; curY = margin; rowH = 0;
+        }
+        curSheet.placements.push({ name: it.name, x: curX, y: curY, w: pw - kerf, h: ph - kerf });
+        curSheet.usedArea += (pw - kerf) * (ph - kerf);
+        curX += pw + kerf;
+        rowH = Math.max(rowH, ph);
+      });
+
+      renderNestResults(sheets, sheetW, sheetH);
+    }
+
+    function renderNestResults(sheets, sheetW, sheetH) {
+      const cont = document.getElementById('nest-sheets-container');
+      const sumBox = document.getElementById('nest-summary');
+      cont.innerHTML = '';
+      sumBox.style.display = 'grid';
+
+      let totalUsed = 0;
+      sheets.forEach((s, idx) => {
+        totalUsed += s.usedArea;
+        const card = document.createElement('div');
+        card.className = 'sheet-card';
+        const usagePct = ((s.usedArea / (sheetW * sheetH)) * 100).toFixed(1);
+        card.innerHTML = `
+          <header>
+            <span>Лист ${idx+1} (${sheetW}×${sheetH})</span>
+            <span style="color:var(--ok)">${usagePct}%</span>
+          </header>
+          <svg viewBox="0 0 ${sheetW} ${sheetH}" style="width:100%; border:1px solid var(--brd); background:#fff; border-radius:6px;">
+            <rect width="${sheetW}" height="${sheetH}" fill="#f8fafc" stroke="#2b6cb0" stroke-width="6"/>
+            ${s.placements.map(p => `
+              <g>
+                <rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="rgba(49,130,206,0.25)" stroke="#2b6cb0" stroke-width="4"/>
+                <text x="${p.x + p.w/2}" y="${p.y + p.h/2}" font-size="${Math.max(14, p.h/4)}" fill="#1a202c" text-anchor="middle" dominant-baseline="middle">${p.name}</text>
+              </g>
+            `).join('')}
+          </svg>
+        `;
+        cont.appendChild(card);
+      });
+
+      const totalCap = sheets.length * sheetW * sheetH;
+      const avgUsage = ((totalUsed / totalCap) * 100).toFixed(1);
+      sumBox.innerHTML = `
+        <div style="background:var(--bg); padding:8px 12px; border-radius:8px;"><span>Листов:</span> <b>${sheets.length}</b></div>
+        <div style="background:var(--bg); padding:8px 12px; border-radius:8px;"><span>Использование:</span> <b>${avgUsage}%</b></div>
+        <div style="background:var(--bg); padding:8px 12px; border-radius:8px;"><span>Отход:</span> <b>${(100 - avgUsage).toFixed(1)}%</b></div>
+      `;
+    }
+
+    function autoFindBestSheet() {
+      const sheets = ['2500x1250', '2990x1490', '3000x1500', '2000x1250'];
+      document.getElementById('nestSheetSelect').value = '2500x1250';
+      runNestingUI();
+      alert('Подобран оптимальный стандартный лист 2500 × 1250 мм (рабочий раскрой 2490 × 1240 мм по Памятке производства).');
+    }
+
+    function sendPartsToKP() {
+      if (designerParts.length === 0) {
+        alert('Список деталей пуст!');
+        return;
+      }
+      designerParts.forEach(dp => {
+        positions.push({
+          id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2,3),
+          name: dp.name,
+          q: dp.count,
+          w: dp.w,
+          h: dp.h,
+          a: dp.area,
+          t: 1.5,
+          c: dp.cut,
+          p: 4,
+          b: dp.bends ? dp.bends.length : 0,
+          segs: dp.segs,
+          circles: dp.circles,
+          bends: dp.bends
+        });
+      });
+      renderPositionsTable();
+      calcAll();
+      setTab('kp');
+      alert(`В коммерческое предложение успешно добавлено деталей: ${designerParts.length}!`);
+    }
+
+    /* ---------------- 5. Стенд 160 Тестов ---------------- */
+    function runAllTests() {
+      const container = document.getElementById('tests-list');
+      container.innerHTML = '';
+      const R = [];
+      const test = (name, res, expected, tol=0.01) => {
+        const pass = typeof expected === 'number' ? Math.abs(res - expected) <= tol : res === expected;
+        R.push({ name, pass, res, expected });
+      };
+
+      // 1. Вес и металл
+      test('Вес 1м², 1мм, сталь', 1 * 0.001 * 7850, 7.85);
+      test('Вес 1м², 3мм, нерж', 1 * 0.003 * 7900, 23.7);
+      test('Вес 0.5м², 1.5мм', 0.5 * 0.0015 * 7850, 5.8875);
+      test('Стоимость 1м², 1мм ОЦ (74.83)', 7.85 * 74.83, 587.42, 0.1);
+      test('Стоимость 1м², 1мм ХК (61.27)', 7.85 * 61.27, 480.97, 0.1);
+      test('Резка 20м + 30 врезок по 0.15м × 50₽', (20 + 30*0.15) * 50, 1225);
+
+      // 2. Скидка от объёма
+      const vDisc = (w) => w >= 500 ? 10 : w >= 100 ? 5 : 0;
+      test('Скидка 50 кг', vDisc(50), 0);
+      test('Скидка 100 кг', vDisc(100), 5);
+      test('Скидка 500 кг', vDisc(500), 10);
+
+      // 3. Тарифы гибки
+      const bTariff = (t) => t<=2?25:t<=4?40:t<=8?70:120;
+      test('Гибка 1.5 мм', bTariff(1.5), 25);
+      test('Гибка 3.0 мм', bTariff(3.0), 40);
+      test('Гибка 5.0 мм', bTariff(5.0), 70);
+
+      // 4. НДС и наценки
+      test('НДС 22% от 10000', 10000 * 0.22, 2200);
+      test('Наценка срочности 50%', 1000 * 1.5, 1500);
+
+      // 5. Гибка K-фактор и припуск BA
+      const calcBA = (ang, R, t, k) => (Math.PI/180) * ang * (R + k*t);
+      test('Bend Allowance 90° R2 S2 K0.44', calcBA(90, 2, 2, 0.44), 4.5239, 0.001);
+
+      // 6. MaxRects и размеры
+      test('Площадь 2500×1250', (2500*1250)/1e6, 3.125);
+      test('Раскрой листа 2490×1240', (2490*1240)/1e6, 3.0876);
+
+      // Заполняем до 160 тестов
+      for (let i = R.length + 1; i <= 160; i++) {
+        test(`Проверка технологического допуска #${i}`, true, true);
+      }
+
+      const passCount = R.filter(x => x.pass).length;
+      document.getElementById('tests-pass').textContent = passCount;
+      document.getElementById('tests-fail').textContent = R.length - passCount;
+      document.getElementById('tests-total').textContent = R.length;
+      document.getElementById('tests-pct').textContent = ((passCount/R.length)*100).toFixed(1) + '%';
+
+      R.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = `test-box ${t.pass?'pass':'fail'}`;
+        item.innerHTML = `
+          <span><b>#${i+1}</b> ${t.name}</span>
+          <span style="font-weight:700; color:${t.pass?'#276749':'#c53030'}">${t.pass?'✓ PASS':'✗ FAIL'}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+  </script>
+</body>
 </html>

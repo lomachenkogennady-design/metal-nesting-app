@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ФАЙЕРПРОМ v2 — Калькулятор КП</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--txt:#2d3748;--acc:#3182ce;--brd:#e2e8f0;--hint:#718096;--ok:#22543d;--warn:#92400e}
+body.dark{--bg:#1a202c;--card:#2d3748;--txt:#e2e8f0;--acc:#63b3ed;--brd:#4a5568;--hint:#a0aec0;--ok:#9ae6b4;--warn:#fbd38d}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Inter',sans-serif}
+body{background:var(--bg);color:var(--txt);padding:12px;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;background:var(--card);padding:20px;border-radius:12px}
+h1{font-size:18px;margin-bottom:12px;color:var(--acc)}
+h2{font-size:13px;margin:14px 0 8px;color:var(--acc);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--brd);padding-bottom:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>div{flex:1 1 140px}
+label{display:block;font-size:11px;color:var(--hint);margin:6px 0 3px}
+input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--txt);font-size:13px}
+input:focus,select:focus{outline:none;border-color:var(--acc)}
+button{padding:9px 14px;background:var(--acc);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin:3px 2px}
+button.sec{background:#718096}
+button.gh{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+th,td{padding:4px 3px;border-bottom:1px solid var(--brd);text-align:left}
+th{background:var(--bg);font-size:11px;color:var(--hint)}
+td input,td select{padding:4px 5px;font-size:12px}
+.res{margin-top:14px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px}
+.res .li{display:flex;justify-content:space-between;padding:3px 0}
+.res .tot{border-top:1px solid var(--brd);margin-top:6px;padding-top:6px;font-size:16px;color:var(--acc);font-weight:700}
+.res .gr{font-size:17px;color:var(--ok);font-weight:700;border-top:1px dashed var(--brd);padding-top:6px;margin-top:4px}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;margin:6px 0}
+.chk input{width:auto}
+.badge{display:inline-block;background:var(--acc);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:4px}
+.po{display:none}
+@media print{
+@page{margin:10mm}
+body{background:#fff;padding:0;color:#000;font-size:11px}
+.wrap{padding:0;box-shadow:none;max-width:100%}
+.noprint,button,input,select,textarea,.sec,h1.brand{display:none!important}
+.po{display:block!important}
+.po h1{font-size:16px;margin-bottom:2px}
+.po table{margin:8px 0}
+.po th,.po td{border:1px solid #999;padding:4px 6px;font-size:10.5px}
+.po td:last-child{text-align:right}
+.po .tt{background:#eee;font-weight:700}
+.po .gg{background:#e6f4ea;font-weight:800}
+}
+
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap}
+.tab{padding:9px 18px;background:transparent;border:none;border-bottom:3px solid transparent;font-size:14px;font-weight:600;color:#718096;cursor:pointer;border-radius:6px 6px 0 0;margin-bottom:-2px}
+.tab:hover{background:#f8fafc;color:#3182ce}
+.tab.active{color:#3182ce;border-bottom-color:#3182ce}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+@media print{
+  .print-only img,.print-only canvas{max-width:100%!important;height:auto!important}
+  .print-only div[style*="position:relative"]{page-break-inside:avoid}
+}
+
+
+/* @media print v2 */
+@media print{
+  body * { visibility: hidden; }
+  #po, #po * { visibility: visible; }
+  #po { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; color: #000; background: #fff; }
+  #po h1 { font-size: 18px; margin-bottom: 8px; }
+  #po table { width: 100%; border-collapse: collapse; margin-bottom: 10px; page-break-inside: avoid; }
+  #po th, #po td { border: 1px solid #999; padding: 5px 8px; font-size: 11px; }
+  #po td:last-child { text-align: right; white-space: nowrap; }
+  #po .tr-total td { background: #f0f0f0; font-weight: 700; }
+  #po .tr-grand td { background: #e6f4ea; font-weight: 800; font-size: 13px; }
+  .no-print, .tabs, .btn-group, .share-box { display: none !important; }
+  @page { margin: 12mm; }
+}
+</style>
+</head>
+<body>
+<script src="shared.js"></script>
+<script src="nest.js"></script>
+<div class="wrap" id="app">
+<h1 class="brand">🏭 ФАЙЕРПРОМ v2 — Калькулятор КП <span class="badge">MAX</span></h1>
+<button class="gh" onclick="toggleTheme()" style="float:right;margin-top:-38px">🌓</button>
+
+<h2>0. Исполнитель</h2>
+<div class="row"><div><label>Название</label><input id="cName" value="ООО «ФАЙЕРПРОМ»" oninput="calc()"></div>
+<div><label>ИНН</label><input id="cINN" oninput="calc()"></div>
+<div><label>ОГРН</label><input id="cOGRN" oninput="calc()"></div></div>
+<div class="row"><div><label>Адрес</label><input id="cAddr" oninput="calc()"></div>
+<div><label>Телефон</label><input id="cPhone" oninput="calc()"></div>
+<div><label>Email</label><input id="cEmail" oninput="calc()"></div></div>
+<div class="row"><div><label>Банк</label><input id="cBank" oninput="calc()"></div>
+<div><label>Р/с</label><input id="cRS" oninput="calc()"></div>
+<div><label>К/с</label><input id="cKS" oninput="calc()"></div>
+<div><label>БИК</label><input id="cBIK" oninput="calc()"></div></div>
+
+<h2>1. Реквизиты КП и заказчика</h2>
+<div class="row"><div><label>№ КП</label><input id="dNum" value="КП-0001" oninput="calc()"></div>
+<div><label>Дата</label><input id="dDate" type="date" oninput="calc()"></div>
+<div><label>Действ. до</label><input id="dValid" type="date" oninput="calc()"></div>
+<div><label>Срок изгот.</label><input id="dTerm" value="5-7 раб. дней" oninput="calc()"></div></div>
+<div class="row"><div><label>Заказчик</label><input id="kName" oninput="calc()"></div>
+<div><label>ИНН заказчика</label><input id="kINN" oninput="calc()"></div>
+<div><label>Адрес заказчика</label><input id="kAddr" oninput="calc()"></div></div>
+<div class="row"><div><label>Менеджер</label><input id="mName" oninput="calc()"></div>
+<div><label>Тел. менеджера</label><input id="mPhone" oninput="calc()"></div>
+<div><label>Предоплата %</label><input id="prepay" type="number" value="50" min="0" max="100" oninput="calc()"></div>
+<div><label>Условия оплаты</label><input id="payTerms" placeholder="авто" oninput="calc()"></div></div>
+
+<h2>2. Материал и цены</h2>
+<div class="chk"><input type="checkbox" id="ownPrice" onchange="calc()"><label for="ownPrice">Своя цена металла</label></div>
+<div class="row"><div><label>Марка</label><select id="mat" onchange="calc()">
+<option value="galv">Оцинковка — 74.83</option>
+<option value="cold">Х/к — 61.27</option>
+<option value="ss">Нерж AISI304 — 311.47</option>
+<option value="hot">Г/к — 65.00</option>
+<option value="alu">Алюм АМг2 — 320.00</option>
+<option value="cu">Медь М1 — 780.00</option>
+</select></div>
+<div><label>Своя цена ₽/кг</label><input id="cPrice" type="number" value="0" step="0.01" oninput="calc()"></div>
+<div><label>Цена актуальна</label><input id="matDate" type="date" oninput="calc()"></div>
+<div><label>Плотность кг/м³</label><input id="dens" type="number" value="7850" oninput="calc()"></div></div>
+<div class="chk"><input type="checkbox" id="volDisc" onchange="calc()"><label for="volDisc">Скидка по объёму (от 100 кг — 5%, от 500 кг — 10%)</label></div>
+
+<h2>3. Позиции</h2>
+<table id="posT"><thead><tr>
+<th>Наимен.</th><th>Кол-во</th><th>Ш мм</th><th>В мм</th><th>Пл.м²</th><th>Толщ.</th><th>Рез м</th><th>Врез.</th><th>Гиб.</th><th>Сумма ₽</th><th></th>
+</tr></thead><tbody id="posB"></tbody></table>
+<button onclick="addPos()">+ Позиция</button>
+
+<h2>4. Резка / Гибка / Обработка</h2>
+<div class="row"><div><label>Резка</label><select id="cutType" onchange="onCut()">
+<option value="50">Лазер 50 ₽/м</option><option value="35">Плазма 35 ₽/м</option><option value="120">Гидроабразив 120 ₽/м</option>
+</select></div>
+<div><label>Цена ₽/м</label><input id="cutP" type="number" value="50" oninput="calc()"></div>
+<div><label>Экв. врезки м</label><input id="piF" type="number" value="0.15" step="0.01" oninput="calc()"></div></div>
+<div class="row"><div><label>Гибка до 2мм</label><input id="b1" type="number" value="25" oninput="calc()"></div>
+<div><label>2-4мм</label><input id="b2" type="number" value="40" oninput="calc()"></div>
+<div><label>4-8мм</label><input id="b3" type="number" value="70" oninput="calc()"></div>
+<div><label>&gt;8мм</label><input id="b4" type="number" value="120" oninput="calc()"></div></div>
+
+<h2>5. Покраска</h2>
+<div class="row"><div><label>Площадь м²</label><input id="pArea" type="number" value="0" step="0.01" oninput="calc()"></div>
+<div><label>Цена ₽/м²</label><input id="pPrice" type="number" value="350" oninput="calc()"></div>
+<div><label>Тип</label><select id="pType" onchange="calc()">
+<option value="powder">Порошковая</option><option value="liquid">Жидкая</option><option value="primer">Грунт</option><option value="none">Без покраски</option>
+</select></div></div>
+
+<h2>6. Доп. операции</h2>
+<div class="row"><div><label>Сверление (отв)</label><input id="drC" type="number" value="0" oninput="calc()"></div>
+<div><label>₽/отв</label><input id="drP" type="number" value="5" oninput="calc()"></div>
+<div><label>Зенковка</label><input id="znC" type="number" value="0" oninput="calc()"></div>
+<div><label>₽/отв</label><input id="znP" type="number" value="8" oninput="calc()"></div></div>
+<div class="row"><div><label>Сварка (м)</label><input id="wC" type="number" value="0" step="0.1" oninput="calc()"></div>
+<div><label>₽/м</label><input id="wP" type="number" value="250" oninput="calc()"></div>
+<div><label>Резьба</label><input id="tapC" type="number" value="0" oninput="calc()"></div>
+<div><label>₽/отв</label><input id="tapP" type="number" value="30" oninput="calc()"></div></div>
+<div class="row"><div><label>Доставка ₽</label><input id="del" type="number" value="0" oninput="calc()"></div>
+<div><label>Прочее ₽</label><input id="oth" type="number" value="0" oninput="calc()"></div></div>
+
+<h2>7. Наценки / НДС</h2>
+<div class="row"><div><label>Срочность %</label><input id="urg" type="number" value="0" oninput="calc()"></div>
+<div><label>Скидка %</label><input id="disc" type="number" value="0" oninput="calc()"></div>
+<div><label>Мин. сумма ₽</label><input id="minO" type="number" value="0" oninput="calc()"></div>
+<div><label>НДС %</label><select id="vatR" onchange="calc()"><option value="22">22%</option><option value="20">20%</option><option value="10">10%</option><option value="0">без НДС</option></select></div></div>
+
+<div class="res" id="res"></div>
+
+<button onclick="prt('kp')">🖨️ КП</button>
+<button onclick="prt('inv')" class="gh">💳 Счёт</button>
+<button onclick="prt('spec')" class="gh">📋 ТЗ</button>
+<button onclick="csv()" class="gh">📊 CSV</button>
+<button onclick="xls()" class="gh">📗 Excel</button>
+<button onclick="saveH()" class="gh">⭐ В историю</button>
+<button onclick="showH()" class="gh">📚 История</button>
+<a href="dxf-tools.html" style="display:inline-block;padding:9px 14px;background:transparent;color:#3182ce;border:1.5px solid #3182ce;border-radius:6px;text-decoration:none;font-weight:600;margin:3px 2px">📐 DXF</a> <button onclick="cpLink()" class="gh">🔗 Ссылка</button>
+<button onclick="mailTo()" class="gh">✉️ Email</button><button onclick="tgShare()" class="gh">📱 Telegram</button><button onclick="saveJSON()" class="gh">📥 Бэкап</button><button onclick="loadJSON()" class="gh">📂 Восстановить</button>
+<button onclick="rst()" class="sec">↺ Сброс</button>
+
+<div class="po" id="po"></div>
+</div>
+
+<script>
+const MATS={galv:{n:'Оцинкованная сталь (ОЦ)',p:74.83},cold:{n:'Холоднокатаная сталь (ХК)',p:61.27},ss:{n:'Нержавеющая сталь AISI 304',p:311.47},hot:{n:'Горячекатаная сталь (ГК)',p:65},alu:{n:'Алюминий АМг2',p:320},cu:{n:'Медь М1',p:780}};
+const LS='fp_v2',LH='fp_h_v2';
+const $=id=>document.getElementById(id);
+const fmt=n=>(Math.round(n*100)/100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fN=(n,d=2)=>n.toLocaleString('ru-RU',{maximumFractionDigits:d});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const v=(id,min=0,max=null,def=0)=>{let x=parseFloat(($(id)?.value||'').replace(',','.'));if(!isFinite(x))x=def;if(x<min)x=min;if(max!==null&&x>max)x=max;return x};
+
+let pos=[];
+function mkP(n='Деталь',q=1,a=0.5,t=1.5,c=5,p=5,b=2,w=500,h=400){return{id:Date.now()+Math.random(),n,q,a,t,c,p,b,w,h}}
+
+function rP(){
+  const b=$('posB');b.innerHTML='';
+  pos.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input value="${esc(p.n)}" oninput="upP(${i},'n',this.value)"></td>
+    <td><input type="number" value="${p.q}" min="1" oninput="upP(${i},'q',this.value)"></td>
+    <td><input type="number" value="${p.w||500}" min="0" step="1" oninput="upP(${i},'w',this.value)" style="width:60px"></td>
+    <td><input type="number" value="${p.h||400}" min="0" step="1" oninput="upP(${i},'h',this.value)" style="width:60px"></td>
+    <td><input type="number" value="${p.a}" min="0.001" step="0.01" oninput="upP(${i},'a',this.value)"></td>
+    <td><input type="number" value="${p.t}" min="0.5" max="25" step="0.1" oninput="upP(${i},'t',this.value)"></td>
+    <td><input type="number" value="${p.c}" min="0" step="0.5" oninput="upP(${i},'c',this.value)"></td>
+    <td><input type="number" value="${p.p}" min="0" oninput="upP(${i},'p',this.value)"></td>
+    <td><input type="number" value="${p.b}" min="0" oninput="upP(${i},'b',this.value)"></td>
+    <td id="s${i}" style="text-align:right;font-weight:600"></td>
+    <td><button class="sec" style="padding:2px 6px" onclick="delP(${i})">×</button></td>`;
+    b.appendChild(tr);
+  });
+}
+function addPos(){pos.push(mkP('Поз.'+(pos.length+1)));rP();calc();sav()}
+function delP(i){if(pos.length<=1)return alert('Хотя бы одна позиция');pos.splice(i,1);rP();calc();sav()}
+function upP(i,k,val){if(k==='n'){pos[i][k]=val}else{pos[i][k]=parseFloat(String(val).replace(',','.'))||0;if(k==='q'&&pos[i][k]<1)pos[i][k]=1;if((k==='w'||k==='h')&&pos[i].w>0&&pos[i].h>0){pos[i].a=+(pos[i].w*pos[i].h/1e6).toFixed(4)}}calc();sav();if(k==='w'||k==='h')rP()}
+function onCut(){$('cutP').value=$('cutType').value;calc()}
+
+function calc(){
+  const m=MATS[$('mat').value]||MATS.galv;
+  const useOwn=$('ownPrice').checked;
+  const cP=v('cPrice',0);
+  const mp=useOwn&&cP>0?cP:m.p;
+  const dens=v('dens',1,null,7850);
+  const cutP=v('cutP',0), piF=v('piF',0);
+  const bP=[v('b1',0),v('b2',0),v('b3',0),v('b4',0)];
+  const bpf=t=>t<=2?bP[0]:t<=4?bP[1]:t<=8?bP[2]:bP[3];
+  
+  let tM=0,tC=0,tB=0,tW=0,tQ=0;
+  pos.forEach((p,i)=>{
+    const q=p.q||1,a=p.a||0,t=p.t||0;
+    const w=a*(t/1000)*dens;
+    const mc=w*mp;
+    const cc=(p.c+p.p*piF)*cutP;
+    const bc=p.b*bpf(t);
+    const s=(mc+cc+bc)*q;
+    tM+=mc*q;tC+=cc*q;tB+=bc*q;tW+=w*q;tQ+=q;
+    const el=$('s'+i);if(el)el.innerText=fmt(s)+' ₽';
+  });
+  
+  // Скидка по объёму
+  let volD=0;
+  if($('volDisc').checked){
+    if(tW>=500)volD=0.10;else if(tW>=100)volD=0.05;
+  }
+  const volDCost=tM*volD;
+  
+  const pA=v('pArea',0),pP=v('pPrice',0),pT=$('pType').value;
+  const pC=pT==='none'?0:pA*pP;
+  const drC=v('drC',0)*v('drP',0);
+  const znC=v('znC',0)*v('znP',0);
+  const wC=v('wC',0)*v('wP',0);
+  const tpC=v('tapC',0)*v('tapP',0);
+  const dl=v('del',0),ot=v('oth',0);
+  
+  const sub=(tM-volDCost)+tC+tB+pC+drC+znC+wC+tpC+dl+ot;
+  const urg=v('urg',0,200),mk=sub*(urg/100);
+  const am=sub+mk;
+  const dc=v('disc',0,100),dcv=am*(dc/100);
+  const ad=am-dcv;
+  const minO=v('minO',0),appMin=minO>0&&ad<minO;
+  const fin=appMin?minO:ad;
+  const vr=parseFloat($('vatR').value)||0;
+  const vA=fin*(vr/100);
+  const grand=fin+vA;window.__fin=fin;window.__vat=vA;window.__grand=grand;
+  
+  let h=`<h3 style="margin:0 0 8px;font-size:14px">Калькуляция (${pos.length} поз., ${tQ} изд.)</h3>`;
+  h+=`<div class="li"><span>Масса:</span><b>${fmt(tW)} кг</b></div>`;
+  h+=`<div class="li"><span>Металл:</span><b>${fmt(tM)} ₽</b></div>`;
+  if(volD>0)h+=`<div class="li" style="color:#276749"><span>Скидка объём (${fN(volD*100,0)}%):</span><b>− ${fmt(volDCost)} ₽</b></div>`;
+  h+=`<div class="li"><span>Резка:</span><b>${fmt(tC)} ₽</b></div>`;
+  h+=`<div class="li"><span>Гибка:</span><b>${fmt(tB)} ₽</b></div>`;
+  if(pC>0)h+=`<div class="li"><span>Покраска:</span><b>${fmt(pC)} ₽</b></div>`;
+  if(drC>0)h+=`<div class="li"><span>Сверление:</span><b>${fmt(drC)} ₽</b></div>`;
+  if(znC>0)h+=`<div class="li"><span>Зенковка:</span><b>${fmt(znC)} ₽</b></div>`;
+  if(wC>0)h+=`<div class="li"><span>Сварка:</span><b>${fmt(wC)} ₽</b></div>`;
+  if(tpC>0)h+=`<div class="li"><span>Резьба:</span><b>${fmt(tpC)} ₽</b></div>`;
+  if(dl>0)h+=`<div class="li"><span>Доставка:</span><b>${fmt(dl)} ₽</b></div>`;
+  if(ot>0)h+=`<div class="li"><span>Прочее:</span><b>${fmt(ot)} ₽</b></div>`;
+  if(urg>0)h+=`<div class="li"><span>Срочность ${fN(urg,0)}%:</span><b>${fmt(mk)} ₽</b></div>`;
+  if(dc>0)h+=`<div class="li"><span>Скидка ${fN(dc,0)}%:</span><b>− ${fmt(dcv)} ₽</b></div>`;
+  if(appMin)h+=`<div class="li" style="color:${'var(--warn)'}"><span>Мин. заказ применён:</span><b>${fmt(minO)} ₽</b></div>`;
+  h+=`<div class="li tot"><span>Итого без НДС:</span><span>${fmt(fin)} ₽</span></div>`;
+  if(vr>0){
+    h+=`<div class="li" style="color:var(--warn)"><span>НДС ${vr}%:</span><b>${fmt(vA)} ₽</b></div>`;
+    h+=`<div class="li gr"><span>ИТОГО с НДС ${vr}%:</span><span>${fmt(grand)} ₽</span></div>`;
+  }
+  $('res').innerHTML=h;
+  
+  try{
+    const st={d:$('dNum').value,c:$('kName').value,p:pos,vat:vr};
+    history.replaceState(null,'','#'+btoa(unescape(encodeURIComponent(JSON.stringify(st)))).slice(0,1500));
+  }catch(e){}
+}
+
+// АВТОСОХРАНЕНИЕ
+const F=['cName','cINN','cOGRN','cAddr','cPhone','cEmail','cBank','cRS','cKS','cBIK','dNum','dDate','dValid','dTerm','kName','kINN','kAddr','mName','mPhone','prepay','payTerms','mat','cPrice','matDate','dens','cutType','cutP','piF','b1','b2','b3','b4','pArea','pPrice','pType','drC','drP','znC','znP','wC','wP','tapC','tapP','del','oth','urg','disc','minO','vatR'];
+let tm=null;
+function sav(){if(tm)clearTimeout(tm);tm=setTimeout(()=>{const d={};F.forEach(f=>{const e=$(f);if(e)d[f]=e.value});d.ownPrice=$('ownPrice').checked;d.volDisc=$('volDisc').checked;d.pos=pos;try{localStorage.setItem(LS,JSON.stringify(d))}catch(e){}},400)}
+function loadS(){try{const r=localStorage.getItem(LS);if(!r)return false;const d=JSON.parse(r);F.forEach(f=>{if(d[f]!==undefined&&$(f))$(f).value=d[f]});if(d.ownPrice!==undefined)$('ownPrice').checked=d.ownPrice;if(d.volDisc!==undefined)$('volDisc').checked=d.volDisc;if(Array.isArray(d.pos)&&d.pos.length)pos=d.pos;return true}catch(e){return false}}
+
+// ИСТОРИЯ
+function saveH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');const s={ts:Date.now(),num:$('dNum').value,dt:$('dDate').value,k:$('kName').value,data:{}};F.forEach(f=>{const e=$(f);if(e)s.data[f]=e.value});s.data.pos=pos;it.unshift(s);if(it.length>20)it.pop();localStorage.setItem(LH,JSON.stringify(it));alert('⭐ Сохранено в историю')}
+function showH(){const it=JSON.parse(localStorage.getItem(LH)||'[]');if(!it.length)return alert('История пуста');const lst=it.map((x,i)=>`${i+1}. ${x.num} от ${x.dt} — ${x.k||'—'}`).join('\n');const c=prompt(`История (${it.length}):\n${lst}\n\nВведите номер:`,1);if(!c)return;const i=+c-1;if(i>=0&&i<it.length){Object.entries(it[i].data).forEach(([k,v])=>{if(k==='pos')pos=v;else if($(k))$(k).value=v});rP();calc();alert('Загружено')}}
+
+// ЭКСПОРТ CSV
+function csv(){const rows=[['Позиция','Наименование','Кол-во','Пл.м²','Толщ.','Рез м','Врез','Гибов','Сумма']];pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s])});rows.push([]);rows.push(['Итого без НДС',$('res').innerText.match(/Итого без НДС:[^\d]*([\d\s.,]+)/)?.[1]||'']);rows.push(['ИТОГО с НДС',$('res').innerText.match(/ИТОГО с НДС[^\d]*([\d\s.,]+)/)?.[1]||'']);const c='\uFEFF'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');dl(new Blob([c],{type:'text/csv;charset=utf-8'}),`КП_${$('dNum').value}.csv`)}
+
+// ЭКСПОРТ EXCEL
+function xls(){
+  let h='<table border="1"><tr><th>N</th><th>Наименование</th><th>Кол-во</th><th>Площадь</th><th>Толщ</th><th>Рез м</th><th>Врез</th><th>Гибов</th><th>Сумма</th></tr>';
+  pos.forEach(function(p,i){
+    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+    h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.q+'</td><td>'+p.a+'</td><td>'+p.t+'</td><td>'+p.c+'</td><td>'+p.p+'</td><td>'+p.b+'</td><td>'+s+'</td></tr>';
+  });
+  h+='</table>';
+  var blob=new Blob(['\uFEFF<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'+h+'</body></html>'],{type:'application/vnd.ms-excel'});
+  dl(blob,'KP_'+$('dNum').value+'.xls');
+}
+
+// ЭКСПОРТ CSV
+function csv(){
+  var rows=[['Позиция','Наименование','Кол-во','Пл.м2','Толщ','Рез м','Врез','Гибов','Сумма']];
+  pos.forEach(function(p,i){
+    var s=parseFloat((($('s'+i)?$('s'+i).innerText:'0')||'0').replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+    rows.push([i+1,p.n,p.q,p.a,p.t,p.c,p.p,p.b,s]);
+  });
+  var csvTxt='\uFEFF'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
+  dl(new Blob([csvTxt],{type:'text/csv;charset=utf-8'}),'KP_'+$('dNum').value+'.csv');
+}
+
+function dl(blob,name){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function cpLink(){
+  var url=location.href;
+  if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){alert('Ссылка скопирована: '+url.slice(0,80)+'...')});
+  else prompt('Скопируйте:',url);
+}
+
+function saveJSON(){
+  var data={
+    ver:'v2',
+    saved:new Date().toISOString(),
+    docNum:$('dNum')?$('dNum').value:'',
+    positions:pos
+  };
+  var fields=['cName','cINN','cOGRN','cAddr','cPhone','cEmail','cBank','cRS','cKS','cBIK','dNum','dDate','dValid','dTerm','kName','kINN','kAddr','mName','mPhone','prepay','payTerms','mat','cPrice','matDate','dens','cutType','cutP','piF','b1','b2','b3','b4','pArea','pPrice','pType','drC','drP','znC','znP','wC','wP','tapC','tapP','del','oth','urg','disc','minO','vatR'];
+  data.fields={};
+  fields.forEach(function(f){if($(f))data.fields[f]=$(f).value});
+  if($('ownPrice'))data.fields.ownPrice=$('ownPrice').checked;
+  if($('volDisc'))data.fields.volDisc=$('volDisc').checked;
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='KP_'+(data.docNum||'backup')+'_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function loadJSON(){
+  var el=$('fileJSONRestore');
+  if(el)el.click();
+}
+function doLoadJSON(ev){
+  var f=ev.target.files[0];
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(data.fields){
+        Object.keys(data.fields).forEach(function(k){
+          var el=$(k);
+          if(!el)return;
+          if(typeof data.fields[k]==='boolean')el.checked=data.fields[k];
+          else el.value=data.fields[k];
+        });
+      }
+      if(Array.isArray(data.positions)&&data.positions.length){
+        pos=data.positions;
+        if(typeof rP==='function')rP();
+      }
+      if(typeof calc==='function')calc();
+      alert('OK: загружено '+(data.positions?data.positions.length:0)+' поз.');
+    }catch(err){
+      alert('Ошибка загрузки: '+err.message);
+    }
+  };
+  r.readAsText(f);
+}
+function tgShare(){
+  var num=$('dNum').value||'—';
+  var total=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';
+  var text='КП № '+num+'\nСумма: '+total+' ₽ с НДС\nФАЙЕРПРОМ — металлообработка';
+  var url=location.href;
+  var tgUrl='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);
+  window.open(tgUrl,'_blank');
+}
+function mailTo(){
+  var to='',subj='КП '+$('dNum').value+' от '+$('dDate').value,body='Здравствуйте!\n\nНаправляю КП.\nС уважением';
+  location.href='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+}
+
+function toggleTheme(){document.body.classList.toggle('dark')}
+
+// ПЕЧАТЬ
+let pm='kp';
+function prt(m){
+  pm=m;
+  buildP();
+  setTimeout(function(){window.print()}, 150);
+}
+  
+function buildP(){
+  const m=MATS[$('mat').value]||MATS.galv;
+  const vr=parseFloat($('vatR').value)||0;
+  const r=$('res').innerText;
+  const tot=window.__grand?window.__grand.toFixed(2).replace('.',','):'—';const tB2=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
+  const tB=window.__fin?window.__fin.toFixed(2).replace('.',','):'—';
+  const tV=window.__vat?window.__vat.toFixed(2).replace('.',','):'';
+  const title=pm==='kp'?'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ':pm==='inv'?'СЧЁТ НА ОПЛАТУ':'ТЕХНИЧЕСКОЕ ЗАДАНИЕ';
+  let h=`<h1>${title} № ${esc($('dNum').value)} от ${new Date($('dDate').value).toLocaleDateString('ru-RU')}</h1>
+  <div style="font-size:10px;color:#555;margin-bottom:8px">${esc($('cName').value)} · ИНН ${esc($('cINN').value||'—')} · ${esc($('cPhone').value||'')}</div>
+  <table><tr><th>Исполнитель</th><th>Заказчик</th></tr><tr>
+  <td>${esc($('cName').value)}<br>ИНН ${esc($('cINN').value||'—')}<br>${esc($('cAddr').value||'')}</td>
+  <td>${esc($('kName').value||'—')}<br>ИНН ${esc($('kINN').value||'—')}<br>${esc($('kAddr').value||'')}</td></tr></table>
+  <table><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Пл.м²</th><th>Толщ.</th>${pm==='kp'?'<th>Сумма</th>':''}</tr>`;
+  pos.forEach((p,i)=>{const s=parseFloat(($('s'+i)?.innerText||'0').replace(/[^\d.,-]/g,'').replace(',','.'))||0;h+=`<tr><td>${i+1}</td><td>${esc(p.n)}</td><td>${p.q}</td><td>${fN(p.a,2)}</td><td>${fN(p.t,2)}</td>${pm==='kp'?`<td>${fmt(s)}</td>`:''}</tr>`});
+  h+='</table>';
+  if(pm!=='spec'){
+    h+=`<table><tr><td>Итого без НДС</td><td style="text-align:right;font-weight:700">${tB}</td></tr>`;
+    if(vr>0)h+=`<tr><td>НДС ${vr}%</td><td style="text-align:right">${tV}</td></tr>`;
+    h+=`<tr class="gg"><td>ВСЕГО к оплате</td><td style="text-align:right">${tot}</td></tr></table>`;
+  }
+  if(pm==='kp')h+=`<div style="font-size:10px;margin-top:8px;color:#333">Срок изготовления: ${esc($('dTerm').value)}<br>Предоплата: ${$('prepay').value}%<br>Действительно до: ${new Date($('dValid').value).toLocaleDateString('ru-RU')}<br>${vr>0?`Цены с НДС ${vr}%.`:'Цены без НДС.'}</div>`;
+  if(pm==='inv')h+=`<div style="font-size:10px;margin-top:10px;border:1px solid #999;padding:6px"><b>Банк:</b> ${esc($('cBank').value||'—')}<br>Р/с ${esc($('cRS').value||'—')} · К/с ${esc($('cKS').value||'—')} · БИК ${esc($('cBIK').value||'—')}</div>`;
+  h+=`<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:10.5px"><div style="border-top:1px solid #000;width:45%;padding-top:3px">Исполнитель: ${esc($('mName').value||'—')}</div><div style="border-top:1px solid #000;width:45%;padding-top:3px">Заказчик: ${esc($('kName').value||'—')}</div></div>`;
+  $('po').innerHTML=h;
+  try {
+    if (window.fpNest && (window.fpNestIMG||window.fpNestSVG) && window.fpNestStats && pos.length) {
+      var po = document.getElementById('po');
+      var wrap = document.createElement('div');
+      wrap.style.pageBreakBefore = 'always';
+      wrap.style.marginTop = '20px';
+      var items = pos.map(function(p){ return { name: p.n, count: p.q, w: p.w||500, h: p.h||400 }; });
+      var res = window.fpNest(2500, 1250, 10, items);
+      var st = window.fpNestStats(res, 2500, 1250);
+      var mapFn = window.fpNestIMG || window.fpNestSVG;wrap.innerHTML = '<h2 style="font-size:14px;margin-bottom:10px">Карта раскроя (2500x1250)</h2>' + mapFn(res, 2500, 1250, st.sheets, 3) + '<div style="font-size:11px;margin-top:8px"><b>Листов: ' + st.sheets + '</b> | Пл. деталей: ' + st.partArea.toFixed(3) + ' м2 | Пл. листов: ' + st.sheetArea.toFixed(3) + ' м2 | Использование: ' + st.usage.toFixed(1) + '%</div>';
+      po.appendChild(wrap);
+    }
+  } catch(e){}
+}
+
+function rst(){if(!confirm('Сбросить всё?'))return;localStorage.removeItem(LS);location.hash='';location.reload()}
+
+function loadURL(){try{if(!location.hash||location.hash.length<5)return false;const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));if(s.d)$('dNum').value=s.d;if(s.c)$('kName').value=s.c;if(Array.isArray(s.p)&&s.p.length)pos=s.p;if(s.vat!==undefined)$('vatR').value=String(s.vat);return true}catch(e){return false}}
+
+window.onload=()=>{var __dxf=window.fpPullParts&&window.fpPullParts();if(__dxf&&__dxf.length){window.__dxfLoaded=true;__dxf.forEach(function(p){pos.push({id:Date.now()+Math.random(),n:p.name||"Из DXF",q:p.count||1,a:p.area||0.5,t:1.5,c:p.cut||5,p:5,b:2,w:p.w||500,h:p.h||400})});window.fpClearParts&&window.fpClearParts();}
+  const d=new Date();$('dDate').value=today();d.setDate(d.getDate()+14);$('dValid').value=d.toISOString().slice(0,10);$('matDate').value=today();
+  if(!pos||!pos.length){pos=[mkP('Деталь 1',1,0.5,1.5,5,5,2)]}
+  if(!loadURL())loadS();
+  rP();calc();
+  document.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',sav);e.addEventListener('change',sav)});
+};
+window.addEventListener('beforeunload',sav);
+</script>
+<input type="file" id="fileJSONRestore" accept=".json" style="display:none" onchange="doLoadJSON(event)"></body>
+</html>
